@@ -158,7 +158,7 @@ export default function RationScalePage() {
           </div>
       </CardHeader>
       <CardContent>
-        <div className="relative h-[calc(100vh-22rem)] overflow-auto border rounded-md">
+        <div className="relative h-[calc(100vh-16rem)] overflow-auto border rounded-md">
             <Table>
             <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
@@ -214,5 +214,3 @@ export default function RationScalePage() {
     </Card>
   );
 }
-
-    

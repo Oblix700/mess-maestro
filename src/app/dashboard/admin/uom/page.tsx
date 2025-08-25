@@ -160,7 +160,7 @@ export default function UomPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="relative h-[calc(100vh-20rem)] overflow-auto border rounded-md">
+          <div className="relative h-[calc(100vh-14rem)] overflow-auto border rounded-md">
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
@@ -283,5 +283,3 @@ export default function UomPage() {
     </>
   );
 }
-
-    
