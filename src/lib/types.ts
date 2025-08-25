@@ -1,3 +1,4 @@
+
 export interface Category {
   id: string;
   name: string;
@@ -44,4 +45,12 @@ export interface Order {
   dateGenerated: string;
   dayRange: string;
   status: "Pending" | "Completed" | "Cancelled";
+}
+
+export interface RationScaleItem {
+    id: string;
+    name: string;
+    categoryId: string;
+    quantity: number;
+    unitOfMeasureId: string;
 }
