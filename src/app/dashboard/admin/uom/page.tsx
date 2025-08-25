@@ -105,7 +105,7 @@ export default function UomPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>Abbreviation</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -141,7 +141,7 @@ export default function UomPage() {
             </TableBody>
           </Table>
         </CardContent>
-      </Card>>
+      </Card>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -155,7 +155,7 @@ export default function UomPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
-                Name
+                Abbreviation
               </Label>
               <Input
                 id="name"

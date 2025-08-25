@@ -100,7 +100,7 @@ export default function RationScalePage() {
                             <SelectContent>
                             {unitsOfMeasure.map((uom) => (
                                 <SelectItem key={uom.id} value={uom.id}>
-                                {uom.name} ({uom.description})
+                                {uom.name}
                                 </SelectItem>
                             ))}
                             </SelectContent>
