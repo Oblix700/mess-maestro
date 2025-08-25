@@ -23,6 +23,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import React from "react";
+import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { PanelLeft } from "lucide-react";
+import { SidebarNav } from "./sidebar-nav";
 
 export function Header() {
   const pathname = usePathname();
@@ -50,8 +53,18 @@ export function Header() {
   });
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
-      <SidebarTrigger className="sm:hidden" />
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button size="icon" variant="outline" className="sm:hidden">
+            <PanelLeft className="h-5 w-5" />
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="sm:max-w-xs p-0">
+          <SidebarNav />
+        </SheetContent>
+      </Sheet>
       <Breadcrumb className="hidden md:flex">
         <BreadcrumbList>
             {breadcrumbs}
