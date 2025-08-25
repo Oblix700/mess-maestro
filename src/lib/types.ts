@@ -1,4 +1,5 @@
 
+
 export interface Category {
   id: string;
   name: string;
@@ -13,8 +14,9 @@ export interface UnitOfMeasure {
 
 export interface Unit {
   id?: string; // Optional because Firestore will generate it
-  unit: string;
+  name: string;
   mess: string;
+  supplierAccounts?: { supplierId: string; accountNumber: string }[];
 }
 
 export interface IngredientVariant {
@@ -90,9 +92,9 @@ export interface User {
 
 export interface Supplier {
     id: string;
-    kitchenId: string;
     name: string;
     contactPerson: string;
     phone: string;
     email: string;
+    regions: string[];
 }

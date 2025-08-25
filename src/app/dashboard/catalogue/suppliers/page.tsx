@@ -35,7 +35,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Pencil, PlusCircle, Trash2, X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import type { Supplier } from '@/lib/types';
 import { Label } from '@/components/ui/label';
@@ -52,6 +53,7 @@ export default function SuppliersPage() {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
     null
   );
+  const [currentRegion, setCurrentRegion] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -76,18 +78,14 @@ export default function SuppliersPage() {
     fetchSuppliers();
   }, [toast]);
   
-  // For now, we'll just show all suppliers. 
-  // Later this will be filtered by the logged-in user's kitchenId.
-  const filteredSuppliers = suppliers;
 
   const handleEditClick = (supplier: Supplier) => {
-    setSelectedSupplier(supplier);
+    setSelectedSupplier({ ...supplier, regions: supplier.regions || [] });
     setIsEditDialogOpen(true);
   };
   
   const handleAddClick = () => {
-    // Assuming a default kitchenId or logic to get the current user's kitchenId
-    setSelectedSupplier({ id: '', name: '', contactPerson: '', phone: '', email: '', kitchenId: 'all' });
+    setSelectedSupplier({ id: '', name: '', contactPerson: '', phone: '', email: '', regions: [] });
     setIsEditDialogOpen(true);
   }
 
@@ -141,11 +139,27 @@ export default function SuppliersPage() {
     setSelectedSupplier(null);
   };
 
-  const handleFieldChange = (field: keyof Omit<Supplier, 'id'>, value: string) => {
+  const handleFieldChange = (field: keyof Omit<Supplier, 'id' | 'regions'>, value: string) => {
     if (selectedSupplier) {
       setSelectedSupplier({ ...selectedSupplier, [field]: value });
     }
   };
+
+  const addRegion = () => {
+    if (selectedSupplier && currentRegion) {
+        const updatedRegions = [...(selectedSupplier.regions || []), currentRegion];
+        setSelectedSupplier({...selectedSupplier, regions: updatedRegions});
+        setCurrentRegion('');
+    }
+  };
+
+  const removeRegion = (regionToRemove: string) => {
+    if (selectedSupplier) {
+        const updatedRegions = selectedSupplier.regions.filter(r => r !== regionToRemove);
+        setSelectedSupplier({...selectedSupplier, regions: updatedRegions});
+    }
+  }
+
 
   return (
     <>
@@ -155,7 +169,7 @@ export default function SuppliersPage() {
             <div>
               <CardTitle>Suppliers</CardTitle>
               <CardDescription>
-                Manage your mess's suppliers.
+                Manage your suppliers and the regions they serve.
               </CardDescription>
             </div>
             <Button size="sm" className="gap-1" onClick={handleAddClick}>
@@ -172,6 +186,7 @@ export default function SuppliersPage() {
                 <TableHead>Contact Person</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Regions</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -180,14 +195,23 @@ export default function SuppliersPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">Loading...</TableCell>
+                  <TableCell colSpan={6} className="text-center">Loading...</TableCell>
                 </TableRow>
-              ) : filteredSuppliers.map((supplier) => (
+              ) : suppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
                   <TableCell className="font-medium">{supplier.name}</TableCell>
                   <TableCell>{supplier.contactPerson}</TableCell>
                   <TableCell>{supplier.phone}</TableCell>
                   <TableCell>{supplier.email}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                        {supplier.regions && supplier.regions.length > 0 ? (
+                            supplier.regions.map(region => <Badge key={region} variant="secondary">{region}</Badge>)
+                        ) : (
+                            <span className="text-sm text-muted-foreground">No regions</span>
+                        )}
+                    </div>
+                  </TableCell>
                   <TableCell className="flex justify-end gap-2">
                     <Button
                       size="icon"
@@ -216,60 +240,64 @@ export default function SuppliersPage() {
 
       {/* Edit/Add Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{selectedSupplier?.id ? 'Edit Supplier' : 'Add Supplier'}</DialogTitle>
             <DialogDescription>
               Make changes to the supplier. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={selectedSupplier?.name || ''}
-                onChange={(e) => handleFieldChange('name', e.target.value)}
-                className="col-span-3"
-              />
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input id="name" value={selectedSupplier?.name || ''} onChange={(e) => handleFieldChange('name', e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="contactPerson">Contact Person</Label>
+                    <Input id="contactPerson" value={selectedSupplier?.contactPerson || ''} onChange={(e) => handleFieldChange('contactPerson', e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input id="phone" value={selectedSupplier?.phone || ''} onChange={(e) => handleFieldChange('phone', e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" value={selectedSupplier?.email || ''} onChange={(e) => handleFieldChange('email', e.target.value)} />
+                </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="contactPerson" className="text-right">
-                Contact Person
-              </Label>
-              <Input
-                id="contactPerson"
-                value={selectedSupplier?.contactPerson || ''}
-                onChange={(e) =>
-                  handleFieldChange('contactPerson', e.target.value)
-                }
-                className="col-span-3"
-              />
+            
+            <div className="grid gap-2">
+                <Label>Regions</Label>
+                <div className="flex items-center gap-2">
+                    <Input 
+                        placeholder="Enter region name" 
+                        value={currentRegion} 
+                        onChange={e => setCurrentRegion(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addRegion())}
+                    />
+                    <Button type="button" onClick={addRegion}>Add Region</Button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2 p-2 border rounded-md min-h-[40px]">
+                    {selectedSupplier?.regions && selectedSupplier.regions.length > 0 ? (
+                        selectedSupplier.regions.map(region => (
+                             <Badge key={region} variant="secondary" className="pl-3 pr-1 py-1 text-sm">
+                                <span>{region}</span>
+                                <button 
+                                onClick={() => removeRegion(region)}
+                                className="ml-1 rounded-full opacity-50 hover:opacity-100 hover:bg-destructive/20 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-destructive"
+                                >
+                                <X className="h-3 w-3" />
+                                <span className="sr-only">Remove region</span>
+                                </button>
+                            </Badge>
+                        ))
+                    ) : (
+                        <span className="text-sm text-muted-foreground p-2">No regions added.</span>
+                    )}
+                </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right">
-                Phone
-              </Label>
-              <Input
-                id="phone"
-                value={selectedSupplier?.phone || ''}
-                onChange={(e) => handleFieldChange('phone', e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
-                Email
-              </Label>
-              <Input
-                id="email"
-                value={selectedSupplier?.email || ''}
-                onChange={(e) => handleFieldChange('email', e.target.value)}
-                className="col-span-3"
-              />
-            </div>
+
           </div>
           <DialogFooter>
             <Button

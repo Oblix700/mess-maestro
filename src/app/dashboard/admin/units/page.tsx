@@ -34,25 +34,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-import type { Unit } from '@/lib/types';
+import type { Unit, Supplier } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { firestore } from '@/lib/firebase/client';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-
+import { Badge } from '@/components/ui/badge';
 
 export default function UnitsPage() {
   const [units, setUnits] = useState<Unit[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(
-    null
-  );
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -76,9 +82,38 @@ export default function UnitsPage() {
     };
     fetchUnits();
   }, [toast]);
+  
+  // Fetch suppliers only when the dialog is opened
+  useEffect(() => {
+    if (isEditDialogOpen) {
+        const fetchSuppliers = async () => {
+            if (suppliers.length > 0) return; // Don't refetch if already loaded
+            try {
+                const suppliersCollection = collection(firestore, 'suppliers');
+                const querySnapshot = await getDocs(suppliersCollection);
+                const suppliersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
+                setSuppliers(suppliersData);
+            } catch (error) {
+                console.error("Error fetching suppliers: ", error);
+                toast({
+                    variant: "destructive",
+                    title: "Error fetching suppliers",
+                    description: "Could not fetch the supplier list for the dialog.",
+                });
+            }
+        };
+        fetchSuppliers();
+    }
+  }, [isEditDialogOpen, suppliers.length, toast]);
+
 
   const handleEditClick = (unit: Unit) => {
-    setSelectedUnit(unit);
+    // Ensure supplierAccounts is an array
+    const unitWithAccounts = {
+        ...unit,
+        supplierAccounts: Array.isArray(unit.supplierAccounts) ? unit.supplierAccounts : [],
+    };
+    setSelectedUnit(unitWithAccounts);
     setIsEditDialogOpen(true);
   };
 
@@ -88,16 +123,14 @@ export default function UnitsPage() {
   };
   
   const handleAddClick = () => {
-    setSelectedUnit({ unit: '', mess: '' }); // Prepare a new unit object
+    setSelectedUnit({ name: '', mess: '', supplierAccounts: [] });
     setIsEditDialogOpen(true);
   }
 
   const handleSaveUnit = async () => {
     if (!selectedUnit) return;
     
-    // Distinguish between Add and Edit
     if (selectedUnit.id) {
-        // Update existing unit
         try {
             const unitDocRef = doc(firestore, 'units', selectedUnit.id);
             const { id, ...unitData } = selectedUnit;
@@ -109,7 +142,6 @@ export default function UnitsPage() {
             toast({ variant: "destructive", title: "Error", description: "Failed to update unit." });
         }
     } else {
-        // Add new unit
         try {
             const { id, ...newUnitData } = selectedUnit;
             const docRef = await addDoc(collection(firestore, 'units'), newUnitData);
@@ -125,7 +157,6 @@ export default function UnitsPage() {
     setSelectedUnit(null);
   };
 
-
   const handleDeleteUnit = async () => {
     if (!selectedUnit || !selectedUnit.id) return;
     try {
@@ -140,10 +171,38 @@ export default function UnitsPage() {
     setSelectedUnit(null);
   };
 
-  const handleFieldChange = (field: keyof Omit<Unit, 'id'>, value: string) => {
+  const handleFieldChange = (field: keyof Omit<Unit, 'id'>, value: any) => {
     if (selectedUnit) {
       setSelectedUnit({ ...selectedUnit, [field]: value });
     }
+  };
+
+  const handleAccountChange = (index: number, field: 'supplierId' | 'accountNumber', value: string) => {
+    if (selectedUnit) {
+      const updatedAccounts = [...(selectedUnit.supplierAccounts || [])];
+      updatedAccounts[index] = { ...updatedAccounts[index], [field]: value };
+      handleFieldChange('supplierAccounts', updatedAccounts);
+    }
+  };
+
+  const addAccount = () => {
+    if (selectedUnit) {
+        const newAccount = { supplierId: '', accountNumber: '' };
+        const updatedAccounts = [...(selectedUnit.supplierAccounts || []), newAccount];
+        handleFieldChange('supplierAccounts', updatedAccounts);
+    }
+  };
+
+  const removeAccount = (index: number) => {
+    if (selectedUnit) {
+        const updatedAccounts = [...(selectedUnit.supplierAccounts || [])];
+        updatedAccounts.splice(index, 1);
+        handleFieldChange('supplierAccounts', updatedAccounts);
+    }
+  };
+
+  const getSupplierName = (supplierId: string) => {
+    return suppliers.find(s => s.id === supplierId)?.name || 'Unknown Supplier';
   };
 
   return (
@@ -154,7 +213,7 @@ export default function UnitsPage() {
             <div>
               <CardTitle>Units</CardTitle>
               <CardDescription>
-                Manage your kitchens and messes.
+                Manage your kitchens, messes, and their supplier account details.
               </CardDescription>
             </div>
             <Button size="sm" className="gap-1" onClick={handleAddClick}>
@@ -167,8 +226,9 @@ export default function UnitsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Unit</TableHead>
+                <TableHead>Unit Name</TableHead>
                 <TableHead>Mess</TableHead>
+                <TableHead>Supplier Accounts</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -177,12 +237,25 @@ export default function UnitsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center">Loading...</TableCell>
+                  <TableCell colSpan={4} className="text-center">Loading...</TableCell>
                 </TableRow>
               ) : units.map((unit) => (
                 <TableRow key={unit.id}>
-                  <TableCell className="font-medium">{unit.unit}</TableCell>
+                  <TableCell className="font-medium">{unit.name}</TableCell>
                   <TableCell>{unit.mess}</TableCell>
+                  <TableCell>
+                    {unit.supplierAccounts && unit.supplierAccounts.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                            {unit.supplierAccounts.map((acc, index) => (
+                                <Badge key={index} variant="secondary" className="font-normal">
+                                    {getSupplierName(acc.supplierId)}: {acc.accountNumber}
+                                </Badge>
+                            ))}
+                        </div>
+                    ) : (
+                        <span className="text-muted-foreground text-sm">No accounts</span>
+                    )}
+                  </TableCell>
                   <TableCell className="flex justify-end gap-2">
                     <Button
                       size="icon"
@@ -211,7 +284,7 @@ export default function UnitsPage() {
 
       {/* Edit/Add Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{selectedUnit?.id ? 'Edit Unit' : 'Add Unit'}</DialogTitle>
             <DialogDescription>
@@ -220,13 +293,13 @@ export default function UnitsPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="unit" className="text-right">
-                Unit
+              <Label htmlFor="name" className="text-right">
+                Unit Name
               </Label>
               <Input
-                id="unit"
-                value={selectedUnit?.unit || ''}
-                onChange={(e) => handleFieldChange('unit', e.target.value)}
+                id="name"
+                value={selectedUnit?.name || ''}
+                onChange={(e) => handleFieldChange('name', e.target.value)}
                 className="col-span-3"
               />
             </div>
@@ -240,6 +313,41 @@ export default function UnitsPage() {
                 onChange={(e) => handleFieldChange('mess', e.target.value)}
                 className="col-span-3"
               />
+            </div>
+            <div className="col-span-4">
+              <Label className="font-semibold">Supplier Accounts</Label>
+              <div className="mt-2 space-y-2 rounded-lg border p-4">
+                {(selectedUnit?.supplierAccounts || []).map((account, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                     <Select value={account.supplierId} onValueChange={(value) => handleAccountChange(index, 'supplierId', value)}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select Supplier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {suppliers.map(s => (
+                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Input
+                      type="text"
+                      placeholder="Account Number"
+                      value={account.accountNumber}
+                      onChange={(e) => handleAccountChange(index, 'accountNumber', e.target.value)}
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removeAccount(index)} className="text-destructive hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {(!selectedUnit?.supplierAccounts || selectedUnit.supplierAccounts.length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center">No supplier accounts added.</p>
+                )}
+                <Button variant="outline" size="sm" onClick={addAccount} className="mt-2">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Account
+                </Button>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -281,3 +389,4 @@ export default function UnitsPage() {
     </>
   );
 }
+
