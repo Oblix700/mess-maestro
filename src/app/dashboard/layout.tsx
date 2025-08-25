@@ -20,7 +20,7 @@ export default function DashboardLayout({
         </Sidebar>
         <div className="flex flex-col sm:pl-14 peer-[[data-state=expanded]]:sm:pl-64 transition-[padding-left] ease-in-out duration-200">
           <Header />
-          <main className="flex-1 items-start p-4 sm:px-6">
+          <main className="flex-1 p-4 sm:px-6">
             {children}
           </main>
         </div>
