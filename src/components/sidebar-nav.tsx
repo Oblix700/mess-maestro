@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -11,6 +12,8 @@ import {
   BarChart3,
   Package,
   Soup,
+  Settings,
+  Scaling,
 } from "lucide-react";
 import {
   Collapsible,
@@ -58,6 +61,14 @@ const menuItems = [
     label: "Reports",
     icon: BarChart3,
   },
+  {
+    href: "/dashboard/admin",
+    label: "Admin",
+    icon: Settings,
+    subItems: [
+        { href: "/dashboard/admin/uom", label: "UOM", icon: Scaling },
+    ]
+  }
 ];
 
 export function SidebarNav() {

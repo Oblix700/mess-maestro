@@ -4,14 +4,26 @@ export interface Category {
   description: string;
 }
 
-export interface Ingredient {
+export interface UnitOfMeasure {
   id: string;
   name: string;
-  categoryId: string;
-  unitOfMeasure: string;
+  description: string;
+}
+
+export interface IngredientVariant {
+  id: string;
   packagingSize: string;
+  unitOfMeasureId: string;
   stock: number;
 }
+
+export interface Ingredient {
+  id:string;
+  name: string;
+  categoryId: string;
+  variants: IngredientVariant[];
+}
+
 
 export interface Dish {
   id: string;
