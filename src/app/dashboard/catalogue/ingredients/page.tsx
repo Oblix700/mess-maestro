@@ -32,42 +32,38 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, X } from 'lucide-react';
 import { ingredients as initialIngredients, categories, unitsOfMeasure } from '@/lib/placeholder-data';
 import type { Ingredient } from '@/lib/types';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function IngredientsPage() {
   const [ingredients, setIngredients] = useState<Ingredient[]>(initialIngredients);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ingredientId: string, variantId: string} | null>(null);
 
-  const getCategoryName = (categoryId: string) => {
-    return categories.find((c) => c.id === categoryId)?.name || 'Unknown';
-  };
-  
   const getUomName = (uomId: string) => {
     return unitsOfMeasure.find((u) => u.id === uomId)?.name || 'N/A';
   }
 
-  // A simple handler to add a new empty variant to an ingredient
   const handleAddVariant = (ingredientId: string) => {
     setIngredients(ingredients.map(ing => {
       if (ing.id === ingredientId) {
         const newVariant = {
           id: `v${Date.now()}`, // temporary unique ID
-          packagingSize: '',
+          packagingSize: '1', // Default size
           unitOfMeasureId: unitsOfMeasure[0]?.id || '',
-          stock: 0, // Not displayed, but kept for data consistency
+          stock: 0,
         };
         return {
           ...ing,
@@ -78,9 +74,16 @@ export default function IngredientsPage() {
     }));
   };
 
-  // A simple handler to remove a variant from an ingredient
-  const handleDeleteVariant = (ingredientId: string, variantId: string) => {
-     setIngredients(ingredients.map(ing => {
+  const confirmDeleteVariant = (ingredientId: string, variantId: string) => {
+    setItemToDelete({ ingredientId, variantId });
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteVariant = () => {
+    if (!itemToDelete) return;
+    const { ingredientId, variantId } = itemToDelete;
+
+    setIngredients(ingredients.map(ing => {
       if (ing.id === ingredientId) {
         return {
           ...ing,
@@ -89,7 +92,10 @@ export default function IngredientsPage() {
       }
       return ing;
     }));
+    setIsDeleteDialogOpen(false);
+    setItemToDelete(null);
   };
+  
 
   return (
     <>
@@ -114,7 +120,7 @@ export default function IngredientsPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead>Packaging Options</TableHead>
+              <TableHead className="w-[50%]">Packaging Options</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -139,16 +145,27 @@ export default function IngredientsPage() {
                   </Select>
                 </TableCell>
                 <TableCell>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
                         {ingredient.variants.length > 0 ? (
                             ingredient.variants.map((variant) => (
-                                <Badge key={variant.id} variant="secondary">
-                                    {variant.packagingSize}{getUomName(variant.unitOfMeasureId)}
+                                <Badge key={variant.id} variant="secondary" className="group pl-3 pr-1 py-1 text-sm">
+                                    <span>{variant.packagingSize}{getUomName(variant.unitOfMeasureId)}</span>
+                                    <button 
+                                      onClick={() => confirmDeleteVariant(ingredient.id, variant.id)}
+                                      className="ml-1 rounded-full opacity-50 hover:opacity-100 hover:bg-destructive/20 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-destructive"
+                                    >
+                                      <X className="h-3 w-3" />
+                                      <span className="sr-only">Remove size</span>
+                                    </button>
                                 </Badge>
                             ))
                         ) : (
                             <span className="text-muted-foreground text-sm">No options</span>
                         )}
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleAddVariant(ingredient.id)}>
+                            <PlusCircle className="h-4 w-4" />
+                            <span className="sr-only">Add size</span>
+                        </Button>
                     </div>
                 </TableCell>
                 <TableCell>
@@ -174,6 +191,26 @@ export default function IngredientsPage() {
         </Table>
       </CardContent>
     </Card>
+
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this packaging size. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteVariant}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
