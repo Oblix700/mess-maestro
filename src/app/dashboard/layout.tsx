@@ -1,10 +1,6 @@
-
 import { Header } from "@/components/header";
 import { SidebarNav } from "@/components/sidebar-nav";
-import {
-  SidebarProvider,
-  Sidebar,
-} from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar } from "@/components/ui/sidebar";
 import React from "react";
 
 export default function DashboardLayout({
@@ -14,15 +10,13 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-muted/40">
+      <div className="flex min-h-screen bg-muted/40">
         <Sidebar>
           <SidebarNav />
         </Sidebar>
-        <div className="sm:pl-14 peer-[[data-state=expanded]]:sm:pl-64 transition-[padding-left] ease-in-out duration-200">
+        <div className="flex flex-1 flex-col sm:pl-14 transition-[padding-left] ease-in-out duration-200 group-data-[state=expanded]/sidebar-wrapper:sm:pl-64">
           <Header />
-          <main className="p-4 sm:p-6">
-            {children}
-          </main>
+          <main className="flex-1 overflow-auto p-4 sm:p-6">{children}</main>
         </div>
       </div>
     </SidebarProvider>
