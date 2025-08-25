@@ -16,6 +16,7 @@ import {
   Scaling,
   Calculator,
   Building,
+  Truck,
 } from "lucide-react";
 import {
   Collapsible,
@@ -46,6 +47,7 @@ const menuItems = [
       { href: "/dashboard/catalogue/categories", label: "Categories", icon: Package },
       { href: "/dashboard/catalogue/ingredients", label: "Ingredients", icon: Soup },
       { href: "/dashboard/catalogue/dishes", label: "Dishes", icon: ChefHat },
+      { href: "/dashboard/catalogue/suppliers", label: "Suppliers", icon: Truck },
     ],
   },
   {

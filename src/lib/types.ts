@@ -25,13 +25,12 @@ export interface IngredientVariant {
 }
 
 export interface Ingredient {
-  id:string;
+  id: string;
   kitchenId: string; // Added for multi-tenancy
   name: string;
   categoryId: string;
   variants: IngredientVariant[];
 }
-
 
 export interface Dish {
   id: string;
@@ -51,34 +50,49 @@ export interface Order {
 }
 
 export interface RationScaleItem {
-    id: string; // This is the ingredientId
-    kitchenId: string; // Added for multi-tenancy
-    name: string;
-    categoryId: string;
-    quantity: number;
-    unitOfMeasureId: string;
-    variants: IngredientVariant[];
+  id: string; // This is the ingredientId
+  kitchenId: string; // Added for multi-tenancy
+  name: string;
+  categoryId: string;
+  quantity: number;
+  unitOfMeasureId: string;
+  variants: IngredientVariant[];
 }
-
 
 // Types for the new Menu Plan structure
 export interface MenuPlanItem {
-    id: string; // Unique ID for the row
-    mealPlanCategoryId: string; // ID of the category like 'Fruit in Season'
-    ingredientId: string | null;
-    dishId: string | null;
-    strength: number; // Percentage
+  id: string; // Unique ID for the row
+  mealPlanCategoryId: string; // ID of the category like 'Fruit in Season'
+  ingredientId: string | null;
+  dishId: string | null;
+  strength: number; // Percentage
 }
 
 export interface MealSection {
-    id: string; // e.g., 'breakfast'
-    title: string; // e.g., 'Breakfast'
-    subTitle?: string;
-    items: MenuPlanItem[];
+  id: string; // e.g., 'breakfast'
+  title: string; // e.g., 'Breakfast'
+  subTitle?: string;
+  items: MenuPlanItem[];
 }
 
 export interface MenuDefinition {
-    day: number;
-    kitchenId: string; // Added for multi-tenancy
-    sections: MealSection[];
+  day: number;
+  kitchenId: string; // Added for multi-tenancy
+  sections: MealSection[];
+}
+
+export interface User {
+    id: string; // Service number
+    name: string;
+    role: 'admin' | 'mess_staff';
+    kitchenId?: string; // Only for mess_staff
+}
+
+export interface Supplier {
+    id: string;
+    kitchenId: string;
+    name: string;
+    contactPerson: string;
+    phone: string;
+    email: string;
 }
