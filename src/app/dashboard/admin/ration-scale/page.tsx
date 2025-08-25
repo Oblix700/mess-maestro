@@ -43,8 +43,10 @@ export default function RationScalePage() {
   }
 
   const handleQuantityChange = (itemId: string, value: string) => {
+    // Replace comma with period for consistency
+    const sanitizedValue = value.replace(/,/, '.');
     const newItems = items.map(item => 
-      item.id === itemId ? { ...item, quantity: Number(value) } : item
+      item.id === itemId ? { ...item, quantity: Number(sanitizedValue) } : item
     );
     setItems(newItems);
   };
@@ -114,7 +116,8 @@ export default function RationScalePage() {
                             </TableCell>
                             <TableCell>
                                 <Input 
-                                    type="number" 
+                                    type="text" // Change to text to handle comma replacement
+                                    inputMode="decimal" // Provides numeric keyboard on mobile
                                     value={item.quantity} 
                                     onChange={(e) => handleQuantityChange(item.id, e.target.value)}
                                     className="w-full" 
