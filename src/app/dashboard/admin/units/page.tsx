@@ -36,19 +36,43 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2, Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Unit } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { units as initialUnits } from '@/lib/placeholder-data';
 import { useToast } from '@/hooks/use-toast';
+import { addUnit, deleteUnit, getUnits, updateUnit } from '@/services/unitService';
 
 export default function UnitsPage() {
-  const [units, setUnits] = useState<Unit[]>(initialUnits);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const { toast } = useToast();
+
+  const fetchUnits = async () => {
+    try {
+      setIsLoading(true);
+      const fetchedUnits = await getUnits();
+      setUnits(fetchedUnits);
+    } catch (error) {
+      console.error('Failed to fetch units:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load units from the database.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnits();
+  }, []);
 
   const handleAddNewClick = () => {
     setSelectedUnit({ unit: '', mess: '' });
@@ -67,28 +91,49 @@ export default function UnitsPage() {
 
   const handleSaveUnit = async () => {
     if (!selectedUnit) return;
-
-    if (selectedUnit.id) {
-        // Update existing unit
-        setUnits(units.map(u => u.id === selectedUnit.id ? selectedUnit : u));
+    setIsFormSubmitting(true);
+    try {
+      if (selectedUnit.id) {
+        await updateUnit(selectedUnit.id, selectedUnit);
         toast({ title: 'Success', description: 'Unit updated successfully.' });
-    } else {
-        // Add new unit
-        const newUnit = { ...selectedUnit, id: `unit-${Date.now()}` };
-        setUnits([...units, newUnit]);
+      } else {
+        await addUnit(selectedUnit);
         toast({ title: 'Success', description: 'Unit added successfully.' });
+      }
+      await fetchUnits(); // Refresh data
+      setIsFormDialogOpen(false);
+      setSelectedUnit(null);
+    } catch (error) {
+        console.error('Failed to save unit:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to save the unit. Please try again.',
+        });
+    } finally {
+        setIsFormSubmitting(false);
     }
-    
-    setIsFormDialogOpen(false);
-    setSelectedUnit(null);
   };
 
   const handleDeleteConfirm = async () => {
     if (!selectedUnit || !selectedUnit.id) return;
-    setUnits(units.filter(u => u.id !== selectedUnit.id));
-    toast({ title: 'Success', description: 'Unit deleted successfully.' });
-    setIsDeleteDialogOpen(false);
-    setSelectedUnit(null);
+    setIsDeleteSubmitting(true);
+    try {
+        await deleteUnit(selectedUnit.id);
+        toast({ title: 'Success', description: 'Unit deleted successfully.' });
+        await fetchUnits(); // Refresh data
+        setIsDeleteDialogOpen(false);
+        setSelectedUnit(null);
+    } catch (error) {
+        console.error('Failed to delete unit:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to delete the unit. Please try again.',
+        });
+    } finally {
+        setIsDeleteSubmitting(false);
+    }
   };
 
   const handleFieldChange = (field: keyof Omit<Unit, 'id'>, value: string) => {
@@ -128,7 +173,15 @@ export default function UnitsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {units.map((unit) => (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center h-24">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                    <span>Loading units...</span>
+                  </TableCell>
+                </TableRow>
+              ) : units.length > 0 ? (
+                units.map((unit) => (
                   <TableRow key={unit.id}>
                     <TableCell className="font-medium">{unit.unit}</TableCell>
                     <TableCell>{unit.mess}</TableCell>
@@ -152,7 +205,14 @@ export default function UnitsPage() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center h-24">
+                    No units found. Click "Add Unit" to get started.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -195,10 +255,20 @@ export default function UnitsPage() {
             <Button
               variant="outline"
               onClick={() => setIsFormDialogOpen(false)}
+              disabled={isFormSubmitting}
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveUnit}>Save changes</Button>
+            <Button onClick={handleSaveUnit} disabled={isFormSubmitting}>
+              {isFormSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save changes'
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -217,12 +287,20 @@ export default function UnitsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleteSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
+              disabled={isDeleteSubmitting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {isDeleteSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+              ) : (
+                  'Delete'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
