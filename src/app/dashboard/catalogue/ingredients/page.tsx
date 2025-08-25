@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { MoreHorizontal, PlusCircle, X } from 'lucide-react';
 import { ingredients as initialIngredients, categories, unitsOfMeasure } from '@/lib/placeholder-data';
 import type { Ingredient } from '@/lib/types';
@@ -51,9 +52,15 @@ export default function IngredientsPage() {
   const [ingredients, setIngredients] = useState<Ingredient[]>(initialIngredients);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ingredientId: string, variantId: string} | null>(null);
+  const [nameFilter, setNameFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
 
   const getUomName = (uomId: string) => {
     return unitsOfMeasure.find((u) => u.id === uomId)?.name || 'N/A';
+  }
+
+  const getCategoryName = (categoryId: string) => {
+    return categories.find((c) => c.id === categoryId)?.name || 'N/A';
   }
 
   const handleAddVariant = (ingredientId: string) => {
@@ -95,6 +102,15 @@ export default function IngredientsPage() {
     setIsDeleteDialogOpen(false);
     setItemToDelete(null);
   };
+
+  const filteredIngredients = useMemo(() => {
+    return ingredients.filter(ingredient => {
+      const categoryName = getCategoryName(ingredient.categoryId).toLowerCase();
+      const nameMatches = ingredient.name.toLowerCase().includes(nameFilter.toLowerCase());
+      const categoryMatches = categoryName.includes(categoryFilter.toLowerCase());
+      return nameMatches && categoryMatches;
+    });
+  }, [ingredients, nameFilter, categoryFilter]);
   
 
   return (
@@ -113,82 +129,87 @@ export default function IngredientsPage() {
             Add Ingredient
           </Button>
         </div>
+        <div className="mt-4 flex items-center gap-4">
+            <Input
+              placeholder="Filter by name..."
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              className="max-w-sm"
+            />
+            <Input
+              placeholder="Filter by category..."
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="w-[50%]">Packaging Options</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {ingredients.map((ingredient) => (
-              <TableRow key={ingredient.id}>
-                <TableCell className="font-medium">{ingredient.name}</TableCell>
-                <TableCell>
-                  <Select defaultValue={ingredient.categoryId}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                    <div className="flex flex-wrap items-center gap-2">
-                        {ingredient.variants.length > 0 ? (
-                            ingredient.variants.map((variant) => (
-                                <Badge key={variant.id} variant="secondary" className="group pl-3 pr-1 py-1 text-sm">
-                                    <span>{variant.packagingSize}{getUomName(variant.unitOfMeasureId)}</span>
-                                    <button 
-                                      onClick={() => confirmDeleteVariant(ingredient.id, variant.id)}
-                                      className="ml-1 rounded-full opacity-50 hover:opacity-100 hover:bg-destructive/20 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-destructive"
-                                    >
-                                      <X className="h-3 w-3" />
-                                      <span className="sr-only">Remove size</span>
-                                    </button>
-                                </Badge>
-                            ))
-                        ) : (
-                            <span className="text-muted-foreground text-sm">No options</span>
-                        )}
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleAddVariant(ingredient.id)}>
-                            <PlusCircle className="h-4 w-4" />
-                            <span className="sr-only">Add size</span>
-                        </Button>
+        <div className="relative h-[calc(100vh-22rem)] overflow-auto border rounded-md">
+            <Table>
+            <TableHeader className="sticky top-0 bg-card z-10">
+                <TableRow>
+                <TableHead className="w-[25%]">Name</TableHead>
+                <TableHead className="w-[20%]">Category</TableHead>
+                <TableHead>Packaging Options</TableHead>
+                <TableHead className="w-[80px]">
+                    <span className="sr-only">Actions</span>
+                </TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {filteredIngredients.map((ingredient) => (
+                <TableRow key={ingredient.id}>
+                    <TableCell className="font-medium">{ingredient.name}</TableCell>
+                    <TableCell>
+                      {getCategoryName(ingredient.categoryId)}
+                    </TableCell>
+                    <TableCell>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {ingredient.variants.length > 0 ? (
+                                ingredient.variants.map((variant) => (
+                                    <Badge key={variant.id} variant="secondary" className="group pl-3 pr-1 py-1 text-sm">
+                                        <span>{variant.packagingSize}{getUomName(variant.unitOfMeasureId)}</span>
+                                        <button 
+                                        onClick={() => confirmDeleteVariant(ingredient.id, variant.id)}
+                                        className="ml-1 rounded-full opacity-50 hover:opacity-100 hover:bg-destructive/20 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-destructive"
+                                        >
+                                        <X className="h-3 w-3" />
+                                        <span className="sr-only">Remove size</span>
+                                        </button>
+                                    </Badge>
+                                ))
+                            ) : (
+                                <span className="text-muted-foreground text-sm">No options</span>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleAddVariant(ingredient.id)}>
+                                <PlusCircle className="h-4 w-4" />
+                                <span className="sr-only">Add size</span>
+                            </Button>
+                        </div>
+                    </TableCell>
+                    <TableCell>
+                    <div className="flex items-center justify-end gap-2">
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                            <DropdownMenuItem>Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center justify-end gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                    </TableCell>
+                </TableRow>
+                ))}
+            </TableBody>
+            </Table>
+        </div>
       </CardContent>
     </Card>
 

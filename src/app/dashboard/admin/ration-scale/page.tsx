@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -26,15 +26,21 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ingredients, categories, unitsOfMeasure, rationScaleItems } from '@/lib/placeholder-data';
+import { ingredients, categories, unitsOfMeasure, rationScaleItems as initialRationScaleItems } from '@/lib/placeholder-data';
 import type { RationScaleItem } from '@/lib/types';
 
 export default function RationScalePage() {
-  const [items, setItems] = useState<RationScaleItem[]>(rationScaleItems);
+  const [items, setItems] = useState<RationScaleItem[]>(initialRationScaleItems);
+  const [nameFilter, setNameFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
 
   const getIngredientInfo = (ingredientId: string) => {
     return ingredients.find(i => i.id === ingredientId) || { name: 'N/A', categoryId: '' };
   };
+
+  const getCategoryName = (categoryId: string) => {
+    return categories.find(c => c.id === categoryId)?.name || 'N/A';
+  }
 
   const handleQuantityChange = (itemId: string, value: string) => {
     const newItems = items.map(item => 
@@ -50,8 +56,15 @@ export default function RationScalePage() {
     setItems(newItems);
   };
 
-  // Although category is derived, this handler might be useful for future enhancements
-  // For now, it won't be used as category is not directly editable here.
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      const ingredientInfo = getIngredientInfo(item.id);
+      const categoryName = getCategoryName(ingredientInfo.categoryId).toLowerCase();
+      const nameMatches = ingredientInfo.name.toLowerCase().includes(nameFilter.toLowerCase());
+      const categoryMatches = categoryName.includes(categoryFilter.toLowerCase());
+      return nameMatches && categoryMatches;
+    });
+  }, [items, nameFilter, categoryFilter]);
 
   return (
     <Card>
@@ -64,53 +77,69 @@ export default function RationScalePage() {
             </CardDescription>
           </div>
         </div>
+        <div className="mt-4 flex items-center gap-4">
+            <Input
+              placeholder="Filter by name..."
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              className="max-w-sm"
+            />
+            <Input
+              placeholder="Filter by category..."
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="w-[120px]">Quantity</TableHead>
-              <TableHead className="w-[180px]">UOM</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => {
-                const ingredientInfo = getIngredientInfo(item.id);
-                return (
-                    <TableRow key={item.id}>
-                        <TableCell className="font-medium">{ingredientInfo.name}</TableCell>
-                        <TableCell>
-                          {categories.find(c => c.id === ingredientInfo.categoryId)?.name || 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                            <Input 
-                                type="number" 
-                                value={item.quantity} 
-                                onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                                className="w-full" 
-                            />
-                        </TableCell>
-                        <TableCell>
-                        <Select defaultValue={item.unitOfMeasureId} onValueChange={(value) => handleUomChange(item.id, value)}>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Select UOM" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            {unitsOfMeasure.map((uom) => (
-                                <SelectItem key={uom.id} value={uom.id}>
-                                {uom.name}
-                                </SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
-                        </TableCell>
-                    </TableRow>
-                )
-            })}
-          </TableBody>
-        </Table>
+        <div className="relative h-[calc(100vh-22rem)] overflow-auto border rounded-md">
+            <Table>
+            <TableHeader className="sticky top-0 bg-card z-10">
+                <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead className="w-[120px]">Quantity</TableHead>
+                <TableHead className="w-[180px]">UOM</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {filteredItems.map((item) => {
+                    const ingredientInfo = getIngredientInfo(item.id);
+                    return (
+                        <TableRow key={item.id}>
+                            <TableCell className="font-medium">{ingredientInfo.name}</TableCell>
+                            <TableCell>
+                            {getCategoryName(ingredientInfo.categoryId)}
+                            </TableCell>
+                            <TableCell>
+                                <Input 
+                                    type="number" 
+                                    value={item.quantity} 
+                                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                                    className="w-full" 
+                                />
+                            </TableCell>
+                            <TableCell>
+                            <Select defaultValue={item.unitOfMeasureId} onValueChange={(value) => handleUomChange(item.id, value)}>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Select UOM" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {unitsOfMeasure.map((uom) => (
+                                    <SelectItem key={uom.id} value={uom.id}>
+                                    {uom.name}
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                            </TableCell>
+                        </TableRow>
+                    )
+                })}
+            </TableBody>
+            </Table>
+        </div>
       </CardContent>
     </Card>
   );
