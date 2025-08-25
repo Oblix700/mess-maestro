@@ -9,6 +9,7 @@ export interface Ingredient {
   name: string;
   categoryId: string;
   unitOfMeasure: string;
+  packagingSize: string;
   stock: number;
 }
 

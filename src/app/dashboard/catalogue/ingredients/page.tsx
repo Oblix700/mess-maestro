@@ -1,10 +1,14 @@
+
+'use client';
+
+import React from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -12,38 +16,44 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, PlusCircle } from "lucide-react";
-import { ingredients, categories } from "@/lib/placeholder-data";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { ingredients, categories } from '@/lib/placeholder-data';
 
 export default function IngredientsPage() {
   const getCategoryName = (categoryId: string) => {
-    return categories.find((c) => c.id === categoryId)?.name || "Unknown";
+    return categories.find((c) => c.id === categoryId)?.name || 'Unknown';
   };
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-            <div>
-                <CardTitle>Ingredients</CardTitle>
-                <CardDescription>
-                Manage your ingredients. Add, edit, or delete them.
-                </CardDescription>
-            </div>
-            <Button size="sm" className="gap-1">
-                <PlusCircle className="h-4 w-4" />
-                Add Ingredient
-            </Button>
+          <div>
+            <CardTitle>Ingredients</CardTitle>
+            <CardDescription>
+              Manage your ingredients. Add, edit, or delete them.
+            </CardDescription>
+          </div>
+          <Button size="sm" className="gap-1">
+            <PlusCircle className="h-4 w-4" />
+            Add Ingredient
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -52,8 +62,8 @@ export default function IngredientsPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead>Unit</TableHead>
-              <TableHead>Stock</TableHead>
+              <TableHead>UOM</TableHead>
+              <TableHead>Packaging Size</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -64,10 +74,21 @@ export default function IngredientsPage() {
               <TableRow key={ingredient.id}>
                 <TableCell className="font-medium">{ingredient.name}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{getCategoryName(ingredient.categoryId)}</Badge>
+                  <Select defaultValue={ingredient.categoryId}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell>{ingredient.unitOfMeasure}</TableCell>
-                <TableCell>{ingredient.stock}</TableCell>
+                <TableCell>{ingredient.packagingSize}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
