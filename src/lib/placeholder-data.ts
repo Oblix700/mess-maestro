@@ -86,6 +86,19 @@ export const ingredients: Ingredient[] = [
       { id: 'v008c', packagingSize: '500', unitOfMeasureId: 'uom003', stock: 0 },
     ] 
   },
+  { id: 'P009', name: 'Beef Sausage (B)', categoryId: 'CAT002', variants: [{ id: 'v009', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P010', name: 'Bologna Sliced (B)', categoryId: 'CAT002', variants: [{ id: 'v010', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P011', name: 'Chicken Livers (B)', categoryId: 'CAT002', variants: [{ id: 'v011', packagingSize: '250', unitOfMeasureId: 'uom003', stock: 0 }] },
+  { id: 'P012', name: 'Haddock Fried Fish (B)', categoryId: 'CAT002', variants: [{ id: 'v012', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P013', name: 'Ham Sliced (B)', categoryId: 'CAT002', variants: [{ id: 'v013', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P014', name: 'Kidneys Lamb/Beef (B)', categoryId: 'CAT002', variants: [{ id: 'v014', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P015', name: 'Kipper Fillets (B)', categoryId: 'CAT002', variants: [{ id: 'v015', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P016', name: 'Mushroom (VEG) (B)', categoryId: 'CAT002', variants: [{ id: 'v016', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P017', name: 'Pork Sausage (B)', categoryId: 'CAT002', variants: [{ id: 'v017', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P018', name: 'Salami Sliced (B)', categoryId: 'CAT002', variants: [{ id: 'v018', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P019', name: 'Snoek Fried Fish (B)', categoryId: 'CAT002', variants: [{ id: 'v019', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P020', name: 'Tomato Grilled (VEG) (B)', categoryId: 'CAT002', variants: [{ id: 'v020', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { id: 'P021', name: 'Vienna Sausage (B)', categoryId: 'CAT002', variants: [{ id: 'v021', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
 ];
 
 export const dishes: Dish[] = [
