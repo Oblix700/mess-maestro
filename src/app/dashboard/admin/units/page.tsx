@@ -35,17 +35,19 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Pencil, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, PlusCircle, Trash2, Database } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import type { Unit } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { addUnit, deleteUnit, getUnits, updateUnit } from '@/services/unitService';
+import { units as placeholderUnits } from '@/lib/placeholder-data';
 
 export default function UnitsPage() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -142,6 +144,39 @@ export default function UnitsPage() {
     }
   };
 
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const existingUnits = await getUnits();
+      if (existingUnits.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'Database Already Seeded',
+          description: 'The units collection already contains data.',
+        });
+        return;
+      }
+
+      const promises = placeholderUnits.map(unit => addUnit({ unit: unit.unit, mess: unit.mess }));
+      await Promise.all(promises);
+      
+      toast({
+        title: 'Success!',
+        description: `${placeholderUnits.length} units have been added to the database.`,
+      });
+      await fetchUnits(); // Refresh the list
+    } catch (error) {
+       console.error('Failed to seed database:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to seed the database. Check the console for details.',
+        });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return (
     <>
       <Card>
@@ -154,6 +189,22 @@ export default function UnitsPage() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
+              {units.length === 0 && !isLoading && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1"
+                    onClick={handleSeedDatabase}
+                    disabled={isSeeding}
+                  >
+                    {isSeeding ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Database className="h-4 w-4" />
+                    )}
+                    Seed Database
+                  </Button>
+              )}
               <Button size="sm" className="gap-1" onClick={handleAddNewClick}>
                 <PlusCircle className="h-4 w-4" />
                 Add Unit
@@ -209,7 +260,7 @@ export default function UnitsPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center h-24">
-                    No units found. Click "Add Unit" to get started.
+                    No units found. Click "Seed Database" to add initial data, or "Add Unit" to create a new one.
                   </TableCell>
                 </TableRow>
               )}
@@ -308,3 +359,5 @@ export default function UnitsPage() {
     </>
   );
 }
+
+    
