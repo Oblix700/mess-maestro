@@ -17,6 +17,7 @@ import {
   Calculator,
   Building,
   Truck,
+  HeartPulse,
 } from "lucide-react";
 import {
   Collapsible,
@@ -73,6 +74,7 @@ const menuItems = [
         { href: "/dashboard/admin/units", label: "Units", icon: Building },
         { href: "/dashboard/admin/uom", label: "UOM", icon: Scaling },
         { href: "/dashboard/admin/ration-scale", label: "Ration Scale", icon: Calculator },
+        { href: "/dashboard/admin/check-status", label: "Check Status", icon: HeartPulse },
     ]
   }
 ];
