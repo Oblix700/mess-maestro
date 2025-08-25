@@ -14,13 +14,13 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen w-full bg-muted/40">
+      <div className="min-h-screen">
         <Sidebar>
           <SidebarNav />
         </Sidebar>
-        <div className="sm:pl-14 peer-[[data-state=expanded]]:sm:pl-64 transition-[padding-left] ease-in-out duration-200">
+        <div className="flex flex-col sm:pl-14 peer-[[data-state=expanded]]:sm:pl-64 transition-[padding-left] ease-in-out duration-200">
           <Header />
-          <main className="p-4 sm:px-6 sm:py-0">
+          <main className="p-4 sm:px-6">
             {children}
           </main>
         </div>
