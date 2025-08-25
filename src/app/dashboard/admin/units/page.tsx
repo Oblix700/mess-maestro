@@ -36,42 +36,19 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2, Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import type { Unit } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { addUnit, getUnits, updateUnit, deleteUnit, seedUnits } from '@/lib/services/unitService';
+import { units as initialUnits } from '@/lib/placeholder-data';
 import { useToast } from '@/hooks/use-toast';
 
 export default function UnitsPage() {
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [units, setUnits] = useState<Unit[]>(initialUnits);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
-  const [isSeeding, setIsSeeding] = useState(false);
   const { toast } = useToast();
-
-  const fetchUnits = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const fetchedUnits = await getUnits();
-      setUnits(fetchedUnits);
-    } catch (error) {
-      console.error('Failed to fetch units:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Could not fetch units. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchUnits();
-  }, [fetchUnits]);
 
   const handleAddNewClick = () => {
     setSelectedUnit({ unit: '', mess: '' });
@@ -91,66 +68,32 @@ export default function UnitsPage() {
   const handleSaveUnit = async () => {
     if (!selectedUnit) return;
 
-    try {
-      if (selectedUnit.id) {
-        await updateUnit(selectedUnit.id, selectedUnit);
+    if (selectedUnit.id) {
+        // Update existing unit
+        setUnits(units.map(u => u.id === selectedUnit.id ? selectedUnit : u));
         toast({ title: 'Success', description: 'Unit updated successfully.' });
-      } else {
-        await addUnit(selectedUnit);
+    } else {
+        // Add new unit
+        const newUnit = { ...selectedUnit, id: `unit-${Date.now()}` };
+        setUnits([...units, newUnit]);
         toast({ title: 'Success', description: 'Unit added successfully.' });
-      }
-      setIsFormDialogOpen(false);
-      setSelectedUnit(null);
-      fetchUnits(); // Refresh the list
-    } catch (error) {
-      console.error('Failed to save unit:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to save the unit.',
-      });
     }
+    
+    setIsFormDialogOpen(false);
+    setSelectedUnit(null);
   };
 
   const handleDeleteConfirm = async () => {
     if (!selectedUnit || !selectedUnit.id) return;
-    try {
-      await deleteUnit(selectedUnit.id);
-      toast({ title: 'Success', description: 'Unit deleted successfully.' });
-      setIsDeleteDialogOpen(false);
-      setSelectedUnit(null);
-      fetchUnits(); // Refresh the list
-    } catch (error) {
-      console.error('Failed to delete unit:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete the unit.',
-      });
-    }
+    setUnits(units.filter(u => u.id !== selectedUnit.id));
+    toast({ title: 'Success', description: 'Unit deleted successfully.' });
+    setIsDeleteDialogOpen(false);
+    setSelectedUnit(null);
   };
 
   const handleFieldChange = (field: keyof Omit<Unit, 'id'>, value: string) => {
     if (selectedUnit) {
       setSelectedUnit({ ...selectedUnit, [field]: value });
-    }
-  };
-
-  const handleSeedData = async () => {
-    setIsSeeding(true);
-    try {
-      await seedUnits();
-      toast({ title: 'Success', description: 'Placeholder data has been added to the database.' });
-      fetchUnits();
-    } catch (error) {
-      console.error('Failed to seed data:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to seed placeholder data.',
-      });
-    } finally {
-      setIsSeeding(false);
     }
   };
 
@@ -162,14 +105,10 @@ export default function UnitsPage() {
             <div>
               <CardTitle>Units</CardTitle>
               <CardDescription>
-                Manage your kitchens and messes. Data is now read from and saved to Firestore.
+                Manage your kitchens and messes.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-               <Button onClick={handleSeedData} disabled={isSeeding || units.length > 0} variant="outline">
-                {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Seed Placeholder Data
-              </Button>
               <Button size="sm" className="gap-1" onClick={handleAddNewClick}>
                 <PlusCircle className="h-4 w-4" />
                 Add Unit
@@ -189,14 +128,7 @@ export default function UnitsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-                  </TableCell>
-                </TableRow>
-              ) : units.length > 0 ? (
-                units.map((unit) => (
+              {units.map((unit) => (
                   <TableRow key={unit.id}>
                     <TableCell className="font-medium">{unit.unit}</TableCell>
                     <TableCell>{unit.mess}</TableCell>
@@ -220,14 +152,7 @@ export default function UnitsPage() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                 <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground py-10">
-                    No units found. Click "Seed Placeholder Data" to get started.
-                  </TableCell>
-                </TableRow>
-              )}
+                ))}
             </TableBody>
           </Table>
         </CardContent>
