@@ -6,13 +6,13 @@ export interface Category {
 }
 
 export interface UnitOfMeasure {
-  id: string;
+  id:string;
   name: string;
   description: string;
 }
 
 export interface Unit {
-  id: string;
+  id?: string; // Optional because Firestore will generate it
   unit: string;
   mess: string;
 }
