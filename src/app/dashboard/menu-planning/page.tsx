@@ -1,11 +1,10 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -19,16 +18,39 @@ import {
 } from '@/components/ui/select';
 import { MenuDay } from '@/components/menu-day';
 import { menuCycle } from '@/lib/menu-data';
+import type { MenuDefinition, MenuPlanItem } from '@/lib/types';
+import { rationScaleItems } from '@/lib/placeholder-data';
 
 const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function MenuPlanningPage() {
   const [selectedDay, setSelectedDay] = useState(1);
-  const selectedMenu = menuCycle.find((menu) => menu.day === selectedDay);
+  const [currentMenu, setCurrentMenu] = useState<MenuDefinition | null>(null);
+
+  useEffect(() => {
+    const menuData = menuCycle.find((menu) => menu.day === selectedDay);
+    // Deep copy to prevent modifying the original placeholder data
+    setCurrentMenu(menuData ? JSON.parse(JSON.stringify(menuData)) : null);
+  }, [selectedDay]);
 
   const handleDayChange = (value: string) => {
     setSelectedDay(parseInt(value, 10));
   };
+  
+  const handleItemChange = (sectionId: string, itemId: string, updatedValues: Partial<MenuPlanItem>) => {
+    if (!currentMenu) return;
+
+    const newMenu = { ...currentMenu };
+    const section = newMenu.sections.find(s => s.id === sectionId);
+    if (section) {
+      const itemIndex = section.items.findIndex(i => i.id === itemId);
+      if (itemIndex > -1) {
+        section.items[itemIndex] = { ...section.items[itemIndex], ...updatedValues };
+        setCurrentMenu(newMenu);
+      }
+    }
+  };
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,8 +82,8 @@ export default function MenuPlanningPage() {
         </CardHeader>
       </Card>
 
-      {selectedMenu ? (
-         <MenuDay menu={selectedMenu} />
+      {currentMenu ? (
+         <MenuDay menu={currentMenu} onItemChange={handleItemChange} />
       ) : (
         <Card>
             <CardContent className="pt-6">

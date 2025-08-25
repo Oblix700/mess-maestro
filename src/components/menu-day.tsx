@@ -32,11 +32,7 @@ import React from 'react';
 
 interface MenuDayProps {
   menu: MenuDefinition;
-}
-
-const getIngredientName = (ingredientId: string | null) => {
-    if (!ingredientId) return 'N/A';
-    return rationScaleItems.find(i => i.id === ingredientId)?.name || 'N/A';
+  onItemChange: (sectionId: string, itemId: string, updatedValues: Partial<MenuPlanItem>) => void;
 }
 
 const getIngredientInfo = (ingredientId: string | null) => {
@@ -48,19 +44,28 @@ const getUomName = (uomId: string) => {
     return unitsOfMeasure.find(u => u.id === uomId)?.name || '';
 }
 
-const MealPlanRow = ({ item }: { item: MenuPlanItem }) => {
+const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, sectionId: string, onItemChange: MenuDayProps['onItemChange'] }) => {
     const ingredient = getIngredientInfo(item.ingredientId);
-    const scale = ingredient?.quantity || '';
+    const scale = ingredient?.quantity ?? '';
     const uom = ingredient ? getUomName(ingredient.unitOfMeasureId) : '';
   
     const filteredIngredients = React.useMemo(() => {
         return rationScaleItems.filter(i => i.categoryId === item.mealPlanCategoryId);
     }, [item.mealPlanCategoryId])
 
+    const handleIngredientChange = (ingredientId: string) => {
+        onItemChange(sectionId, item.id, { ingredientId: ingredientId });
+    }
+    
+    const handleCategoryChange = (categoryId: string) => {
+        // When category changes, clear the ingredient as it might not be valid anymore
+        onItemChange(sectionId, item.id, { mealPlanCategoryId: categoryId, ingredientId: null });
+    }
+
     return (
         <TableRow>
             <TableCell className="w-[200px]">
-                 <Select defaultValue={item.mealPlanCategoryId}>
+                 <Select value={item.mealPlanCategoryId} onValueChange={handleCategoryChange}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select category..." />
                     </SelectTrigger>
@@ -72,7 +77,7 @@ const MealPlanRow = ({ item }: { item: MenuPlanItem }) => {
                 </Select>
             </TableCell>
             <TableCell className="w-[250px]">
-                <Select defaultValue={item.ingredientId || undefined}>
+                <Select value={item.ingredientId || ''} onValueChange={handleIngredientChange}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select ingredient..." />
                     </SelectTrigger>
@@ -100,7 +105,7 @@ const MealPlanRow = ({ item }: { item: MenuPlanItem }) => {
                 </Select>
             </TableCell>
             <TableCell className="w-[100px]">
-                <Input defaultValue={item.strength} type="number" suffix="%" />
+                <Input defaultValue={item.strength} type="number" />
             </TableCell>
             <TableCell className="text-right">
                 <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -111,7 +116,7 @@ const MealPlanRow = ({ item }: { item: MenuPlanItem }) => {
     )
 }
 
-const MealSectionCard = ({ section }: { section: MealSection }) => {
+const MealSectionCard = ({ section, onItemChange }: { section: MealSection, onItemChange: MenuDayProps['onItemChange'] }) => {
   return (
     <Card>
       <CardHeader>
@@ -142,7 +147,7 @@ const MealSectionCard = ({ section }: { section: MealSection }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {section.items.map((item) => <MealPlanRow key={item.id} item={item} />)}
+            {section.items.map((item) => <MealPlanRow key={item.id} item={item} sectionId={section.id} onItemChange={onItemChange} />)}
              {section.items.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground">
@@ -157,11 +162,11 @@ const MealSectionCard = ({ section }: { section: MealSection }) => {
   );
 };
 
-export const MenuDay = ({ menu }: MenuDayProps) => {
+export const MenuDay = ({ menu, onItemChange }: MenuDayProps) => {
   return (
     <div className="space-y-6">
       {menu.sections.map((section) => (
-        <MealSectionCard key={section.id} section={section} />
+        <MealSectionCard key={section.id} section={section} onItemChange={onItemChange} />
       ))}
     </div>
   );
