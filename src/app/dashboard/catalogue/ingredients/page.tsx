@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 export default function IngredientsPage() {
   const [ingredients, setIngredients] = useState<Ingredient[]>(initialIngredients);
@@ -138,70 +139,20 @@ export default function IngredientsPage() {
                   </Select>
                 </TableCell>
                 <TableCell>
-                    {ingredient.variants.length > 0 
-                        ? `${ingredient.variants.length} option(s)`
-                        : "No options"
-                    }
+                    <div className="flex flex-wrap gap-1">
+                        {ingredient.variants.length > 0 ? (
+                            ingredient.variants.map((variant) => (
+                                <Badge key={variant.id} variant="secondary">
+                                    {variant.packagingSize}{getUomName(variant.unitOfMeasureId)}
+                                </Badge>
+                            ))
+                        ) : (
+                            <span className="text-muted-foreground text-sm">No options</span>
+                        )}
+                    </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-2">
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">Manage Packaging</Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                                <DialogTitle>Manage Packaging for {ingredient.name}</DialogTitle>
-                                <DialogDescription>
-                                    Add, edit, or remove packaging sizes for this ingredient.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="py-4">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Packaging Size</TableHead>
-                                            <TableHead>UOM</TableHead>
-                                            <TableHead><span className="sr-only">Actions</span></TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {ingredient.variants.map(variant => (
-                                            <TableRow key={variant.id}>
-                                                <TableCell>
-                                                    <Input type="text" defaultValue={variant.packagingSize} placeholder="e.g., 30" />
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Select defaultValue={variant.unitOfMeasureId}>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select UOM" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {unitsOfMeasure.map(uom => (
-                                                                <SelectItem key={uom.id} value={uom.id}>{uom.name}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteVariant(ingredient.id, variant.id)}>
-                                                      <Trash2 className="h-4 w-4" />
-                                                      <span className="sr-only">Delete</span>
-                                                  </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                             <DialogFooter>
-                                <Button size="sm" variant="outline" className="gap-1" onClick={() => handleAddVariant(ingredient.id)}>
-                                    <PlusCircle className="h-4 w-4" />
-                                    Add New Size
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
