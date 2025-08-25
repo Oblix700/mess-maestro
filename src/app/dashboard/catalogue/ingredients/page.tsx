@@ -25,6 +25,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -33,6 +41,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { MoreHorizontal, PlusCircle, X } from 'lucide-react';
 import { ingredients as initialIngredients, categories, unitsOfMeasure } from '@/lib/placeholder-data';
 import type { Ingredient } from '@/lib/types';
@@ -55,6 +64,11 @@ export default function IngredientsPage() {
   const [nameFilter, setNameFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
 
+  const [isAddVariantDialogOpen, setIsAddVariantDialogOpen] = useState(false);
+  const [selectedIngredientId, setSelectedIngredientId] = useState<string | null>(null);
+  const [newVariant, setNewVariant] = useState({ packagingSize: '', unitOfMeasureId: '' });
+
+
   const getUomName = (uomId: string) => {
     return unitsOfMeasure.find((u) => u.id === uomId)?.name || 'N/A';
   }
@@ -63,23 +77,35 @@ export default function IngredientsPage() {
     return categories.find((c) => c.id === categoryId)?.name || 'N/A';
   }
 
-  const handleAddVariant = (ingredientId: string) => {
+  const handleOpenAddVariantDialog = (ingredientId: string) => {
+    setSelectedIngredientId(ingredientId);
+    setNewVariant({ packagingSize: '', unitOfMeasureId: unitsOfMeasure[0]?.id || '' });
+    setIsAddVariantDialogOpen(true);
+  };
+  
+  const handleAddVariant = () => {
+    if (!selectedIngredientId || !newVariant.packagingSize || !newVariant.unitOfMeasureId) return;
+
     setIngredients(ingredients.map(ing => {
-      if (ing.id === ingredientId) {
-        const newVariant = {
+      if (ing.id === selectedIngredientId) {
+        const newVariantToAdd = {
           id: `v${Date.now()}`, // temporary unique ID
-          packagingSize: '1', // Default size
-          unitOfMeasureId: unitsOfMeasure[0]?.id || '',
+          packagingSize: newVariant.packagingSize,
+          unitOfMeasureId: newVariant.unitOfMeasureId,
           stock: 0,
         };
         return {
           ...ing,
-          variants: [...ing.variants, newVariant],
+          variants: [...ing.variants, newVariantToAdd],
         };
       }
       return ing;
     }));
+
+    setIsAddVariantDialogOpen(false);
+    setSelectedIngredientId(null);
   };
+
 
   const confirmDeleteVariant = (ingredientId: string, variantId: string) => {
     setItemToDelete({ ingredientId, variantId });
@@ -182,7 +208,7 @@ export default function IngredientsPage() {
                             ) : (
                                 <span className="text-muted-foreground text-sm">No options</span>
                             )}
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleAddVariant(ingredient.id)}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenAddVariantDialog(ingredient.id)}>
                                 <PlusCircle className="h-4 w-4" />
                                 <span className="sr-only">Add size</span>
                             </Button>
@@ -212,6 +238,59 @@ export default function IngredientsPage() {
         </div>
       </CardContent>
     </Card>
+
+    {/* Add Variant Dialog */}
+    <Dialog open={isAddVariantDialogOpen} onOpenChange={setIsAddVariantDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Packaging Option</DialogTitle>
+            <DialogDescription>
+              Enter the size and unit of measure for the new packaging option.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="packagingSize" className="text-right">
+                Size (Qty)
+              </Label>
+              <Input
+                id="packagingSize"
+                type="number"
+                value={newVariant.packagingSize}
+                onChange={(e) => setNewVariant({ ...newVariant, packagingSize: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="uom" className="text-right">
+                UOM
+              </Label>
+              <Select
+                value={newVariant.unitOfMeasureId}
+                onValueChange={(value) => setNewVariant({ ...newVariant, unitOfMeasureId: value })}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select UOM" />
+                </SelectTrigger>
+                <SelectContent>
+                  {unitsOfMeasure.map((uom) => (
+                    <SelectItem key={uom.id} value={uom.id}>
+                      {uom.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddVariantDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddVariant}>Save Option</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
