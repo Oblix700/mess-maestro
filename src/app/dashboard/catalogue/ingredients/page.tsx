@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import { ingredients as initialIngredients, categories, unitsOfMeasure } from '@/lib/placeholder-data';
 import type { Ingredient } from '@/lib/types';
 import {
@@ -58,6 +58,38 @@ export default function IngredientsPage() {
     return unitsOfMeasure.find((u) => u.id === uomId)?.name || 'N/A';
   }
 
+  // A simple handler to add a new empty variant to an ingredient
+  const handleAddVariant = (ingredientId: string) => {
+    setIngredients(ingredients.map(ing => {
+      if (ing.id === ingredientId) {
+        const newVariant = {
+          id: `v${Date.now()}`, // temporary unique ID
+          packagingSize: '',
+          unitOfMeasureId: unitsOfMeasure[0]?.id || '',
+          stock: 0, // Not displayed, but kept for data consistency
+        };
+        return {
+          ...ing,
+          variants: [...ing.variants, newVariant],
+        };
+      }
+      return ing;
+    }));
+  };
+
+  // A simple handler to remove a variant from an ingredient
+  const handleDeleteVariant = (ingredientId: string, variantId: string) => {
+     setIngredients(ingredients.map(ing => {
+      if (ing.id === ingredientId) {
+        return {
+          ...ing,
+          variants: ing.variants.filter(v => v.id !== variantId),
+        };
+      }
+      return ing;
+    }));
+  };
+
   return (
     <>
     <Card>
@@ -66,7 +98,7 @@ export default function IngredientsPage() {
           <div>
             <CardTitle>Ingredients</CardTitle>
             <CardDescription>
-              Manage your ingredients and their variants.
+              Manage your ingredients and their packaging sizes.
             </CardDescription>
           </div>
           <Button size="sm" className="gap-1">
@@ -81,7 +113,7 @@ export default function IngredientsPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead>Variants</TableHead>
+              <TableHead>Packaging Options</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
               </TableHead>
@@ -107,21 +139,21 @@ export default function IngredientsPage() {
                 </TableCell>
                 <TableCell>
                     {ingredient.variants.length > 0 
-                        ? `${ingredient.variants.length} variant(s)`
-                        : "No variants"
+                        ? `${ingredient.variants.length} option(s)`
+                        : "No options"
                     }
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-2">
                     <Dialog>
                         <DialogTrigger asChild>
-                            <Button variant="outline" size="sm">Manage Variants</Button>
+                            <Button variant="outline" size="sm">Manage Packaging</Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                                <DialogTitle>Manage Variants for {ingredient.name}</DialogTitle>
+                                <DialogTitle>Manage Packaging for {ingredient.name}</DialogTitle>
                                 <DialogDescription>
-                                    Add, edit, or remove packaging variants for this ingredient.
+                                    Add, edit, or remove packaging sizes for this ingredient.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="py-4">
@@ -130,14 +162,15 @@ export default function IngredientsPage() {
                                         <TableRow>
                                             <TableHead>Packaging Size</TableHead>
                                             <TableHead>UOM</TableHead>
-                                            <TableHead>Stock</TableHead>
                                             <TableHead><span className="sr-only">Actions</span></TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {ingredient.variants.map(variant => (
                                             <TableRow key={variant.id}>
-                                                <TableCell>{variant.packagingSize}</TableCell>
+                                                <TableCell>
+                                                    <Input type="text" defaultValue={variant.packagingSize} placeholder="e.g., 30" />
+                                                </TableCell>
                                                 <TableCell>
                                                     <Select defaultValue={variant.unitOfMeasureId}>
                                                         <SelectTrigger>
@@ -150,9 +183,11 @@ export default function IngredientsPage() {
                                                         </SelectContent>
                                                     </Select>
                                                 </TableCell>
-                                                <TableCell>{variant.stock}</TableCell>
-                                                <TableCell>
-                                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                <TableCell className="text-right">
+                                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteVariant(ingredient.id, variant.id)}>
+                                                      <Trash2 className="h-4 w-4" />
+                                                      <span className="sr-only">Delete</span>
+                                                  </Button>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -160,9 +195,9 @@ export default function IngredientsPage() {
                                 </Table>
                             </div>
                              <DialogFooter>
-                                <Button size="sm" variant="outline" className="gap-1">
+                                <Button size="sm" variant="outline" className="gap-1" onClick={() => handleAddVariant(ingredient.id)}>
                                     <PlusCircle className="h-4 w-4" />
-                                    Add Variant
+                                    Add New Size
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
