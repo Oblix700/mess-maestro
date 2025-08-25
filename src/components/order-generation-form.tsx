@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Sparkles } from "lucide-react";
-import { ingredients } from "@/lib/placeholder-data";
 
 const formSchema = z.object({
   headcount: z.coerce.number().min(1, "Headcount must be at least 1."),

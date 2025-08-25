@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
-import { dishes } from "@/lib/placeholder-data";
+import { dishes } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 
 export default function DishesPage() {

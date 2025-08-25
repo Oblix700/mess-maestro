@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { categories, rationScaleItems, unitsOfMeasure } from '@/lib/placeholder-data';
+import { categories, rationScaleItems, unitsOfMeasure } from '@/lib/data';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import React from 'react';
 

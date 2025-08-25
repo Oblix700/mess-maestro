@@ -1,0 +1,25 @@
+import type { Unit } from '@/lib/types';
+
+export const units: Unit[] = [
+    { id: '1', name: '68 AS', mess: 'Combined Mess' },
+    { id: '2', name: 'AFB BSPT', mess: 'Off Mess' },
+    { id: '3', name: 'AFB BSPT', mess: 'Combined Mess' },
+    { id: '4', name: 'AFB DBN', mess: 'Combined Mess' },
+    { id: '5', name: 'AFB HSPT', mess: 'Off Mess' },
+    { id: '6', name: 'AFB HSPT', mess: 'Nco Mess' },
+    { id: '7', name: 'AFB HSPT', mess: 'Combined Mess' },
+    { id: '8', name: 'AFB HSPT', mess: 'Gym' },
+    { id: '9', name: 'AFB LBWG', mess: 'Off Mess' },
+    { id: '10', name: 'AFB LBWG', mess: 'Combined Mess' },
+    { id: '11', name: 'AFB LBWG', mess: 'Cpl Mess' },
+    { id: '12', name: 'AFB MKD', mess: 'Combined Mess' },
+    { id: '13', name: 'AFB OVB', mess: 'Combined Mess' },
+    { id: '14', name: 'AFB WKLF', mess: 'Off Mess' },
+    { id: '15', name: 'AFB WKLF', mess: 'Ladies mess' },
+    { id: '16', name: 'AFB WKLF', mess: 'NCO Mess' },
+    { id: '17', name: 'AFB WKLF', mess: 'Ditholo Mess' },
+    { id: '18', name: 'AFB YPLT', mess: 'Off Mess' },
+    { id: '19', name: 'AFB YPLT', mess: 'Combined Mess' },
+    { id: '20', name: 'AFB ZWKP', mess: 'Combined Mess' },
+    { id: '21', name: 'SAAF COL', mess: 'Combined Mess' },
+];

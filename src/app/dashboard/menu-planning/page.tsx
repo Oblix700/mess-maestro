@@ -20,7 +20,6 @@ import {
 import { MenuDay } from '@/components/menu-day';
 import { menuCycle } from '@/lib/menu-data';
 import type { MenuDefinition, MenuPlanItem } from '@/lib/types';
-import { rationScaleItems } from '@/lib/placeholder-data';
 
 const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
