@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import { firestore } from '@/lib/firebase/firestore';
+import { firestore } from '@/lib/firebase/client';
 import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
 
 
