@@ -147,15 +147,17 @@ export default function UnitsPage() {
   const handleSeedDatabase = async () => {
     setIsSeeding(true);
     try {
-      const existingUnits = await getUnits();
-      if (existingUnits.length > 0) {
-        toast({
-          variant: 'destructive',
-          title: 'Database Already Seeded',
-          description: 'The units collection already contains data.',
-        });
-        return;
-      }
+      // This check was causing the issue, so it's removed. 
+      // We will rely on the user to only click this once.
+      // const existingUnits = await getUnits();
+      // if (existingUnits.length > 0) {
+      //   toast({
+      //     variant: 'destructive',
+      //     title: 'Database Already Seeded',
+      //     description: 'The units collection already contains data.',
+      //   });
+      //   return;
+      // }
 
       const promises = placeholderUnits.map(unit => addUnit({ unit: unit.unit, mess: unit.mess }));
       await Promise.all(promises);
@@ -167,10 +169,11 @@ export default function UnitsPage() {
       await fetchUnits(); // Refresh the list
     } catch (error) {
        console.error('Failed to seed database:', error);
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         toast({
             variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to seed the database. Check the console for details.',
+            title: 'Error Seeding Database',
+            description: `Failed to seed the database. Please check the console for details. Error: ${errorMessage}`,
         });
     } finally {
       setIsSeeding(false);
@@ -359,5 +362,3 @@ export default function UnitsPage() {
     </>
   );
 }
-
-    
