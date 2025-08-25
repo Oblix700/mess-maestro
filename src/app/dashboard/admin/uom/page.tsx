@@ -160,48 +160,50 @@ export default function UomPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Abbreviation</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center">Loading...</TableCell>
-                  </TableRow>
-              ) : uoms.map((uom) => (
-                <TableRow key={uom.id}>
-                  <TableCell className="font-medium">{uom.name}</TableCell>
-                  <TableCell>{uom.description}</TableCell>
-                  <TableCell className="flex justify-end gap-2">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleEditClick(uom)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDeleteClick(uom)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </TableCell>
+          <div className="relative h-[calc(100vh-20rem)] overflow-auto border rounded-md">
+            <Table>
+              <TableHeader className="sticky top-0 bg-card z-10">
+                <TableRow>
+                  <TableHead>Abbreviation</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center">Loading...</TableCell>
+                    </TableRow>
+                ) : uoms.map((uom) => (
+                  <TableRow key={uom.id}>
+                    <TableCell className="font-medium">{uom.name}</TableCell>
+                    <TableCell>{uom.description}</TableCell>
+                    <TableCell className="flex justify-end gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleEditClick(uom)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDeleteClick(uom)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

@@ -179,62 +179,64 @@ export default function SuppliersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Contact Person</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Regions</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+          <div className="relative h-[calc(100vh-20rem)] overflow-auto border rounded-md">
+            <Table>
+              <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Contact Person</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Regions</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
-              ) : suppliers.map((supplier) => (
-                <TableRow key={supplier.id}>
-                  <TableCell className="font-medium">{supplier.name}</TableCell>
-                  <TableCell>{supplier.contactPerson}</TableCell>
-                  <TableCell>{supplier.phone}</TableCell>
-                  <TableCell>{supplier.email}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                        {supplier.regions && supplier.regions.length > 0 ? (
-                            supplier.regions.map(region => <Badge key={region} variant="secondary">{region}</Badge>)
-                        ) : (
-                            <span className="text-sm text-muted-foreground">No regions</span>
-                        )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="flex justify-end gap-2">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleEditClick(supplier)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDeleteClick(supplier)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                  </TableRow>
+                ) : suppliers.map((supplier) => (
+                  <TableRow key={supplier.id}>
+                    <TableCell className="font-medium">{supplier.name}</TableCell>
+                    <TableCell>{supplier.contactPerson}</TableCell>
+                    <TableCell>{supplier.phone}</TableCell>
+                    <TableCell>{supplier.email}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                          {supplier.regions && supplier.regions.length > 0 ? (
+                              supplier.regions.map(region => <Badge key={region} variant="secondary">{region}</Badge>)
+                          ) : (
+                              <span className="text-sm text-muted-foreground">No regions</span>
+                          )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="flex justify-end gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleEditClick(supplier)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDeleteClick(supplier)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

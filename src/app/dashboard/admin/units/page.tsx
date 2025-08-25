@@ -82,7 +82,7 @@ export default function UnitsPage() {
     };
     fetchUnits();
   }, [toast]);
-  
+
   // Fetch suppliers only when the dialog is opened
   useEffect(() => {
     if (isEditDialogOpen) {
@@ -121,7 +121,7 @@ export default function UnitsPage() {
     setSelectedUnit(unit);
     setIsDeleteDialogOpen(true);
   };
-  
+
   const handleAddClick = () => {
     setSelectedUnit({ name: '', mess: '', supplierAccounts: [] });
     setIsEditDialogOpen(true);
@@ -129,7 +129,7 @@ export default function UnitsPage() {
 
   const handleSaveUnit = async () => {
     if (!selectedUnit) return;
-    
+
     if (selectedUnit.id) {
         try {
             const unitDocRef = doc(firestore, 'units', selectedUnit.id);
@@ -152,7 +152,7 @@ export default function UnitsPage() {
             toast({ variant: "destructive", title: "Error", description: "Failed to add unit." });
         }
     }
-    
+
     setIsEditDialogOpen(false);
     setSelectedUnit(null);
   };
@@ -223,62 +223,64 @@ export default function UnitsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Unit Name</TableHead>
-                <TableHead>Mess</TableHead>
-                <TableHead>Supplier Accounts</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+          <div className="relative h-[calc(100vh-20rem)] overflow-auto border rounded-md">
+            <Table>
+              <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                  <TableHead>Unit Name</TableHead>
+                  <TableHead>Mess</TableHead>
+                  <TableHead>Supplier Accounts</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
-              ) : units.map((unit) => (
-                <TableRow key={unit.id}>
-                  <TableCell className="font-medium">{unit.name}</TableCell>
-                  <TableCell>{unit.mess}</TableCell>
-                  <TableCell>
-                    {unit.supplierAccounts && unit.supplierAccounts.length > 0 ? (
-                        <div className="flex flex-col gap-1">
-                            {unit.supplierAccounts.map((acc, index) => (
-                                <Badge key={index} variant="secondary" className="font-normal">
-                                    {getSupplierName(acc.supplierId)}: {acc.accountNumber}
-                                </Badge>
-                            ))}
-                        </div>
-                    ) : (
-                        <span className="text-muted-foreground text-sm">No accounts</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="flex justify-end gap-2">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleEditClick(unit)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDeleteClick(unit)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                  </TableRow>
+                ) : units.map((unit) => (
+                  <TableRow key={unit.id}>
+                    <TableCell className="font-medium">{unit.name}</TableCell>
+                    <TableCell>{unit.mess}</TableCell>
+                    <TableCell>
+                      {unit.supplierAccounts && unit.supplierAccounts.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                              {unit.supplierAccounts.map((acc, index) => (
+                                  <Badge key={index} variant="secondary" className="font-normal">
+                                      {getSupplierName(acc.supplierId)}: {acc.accountNumber}
+                                  </Badge>
+                              ))}
+                          </div>
+                      ) : (
+                          <span className="text-muted-foreground text-sm">No accounts</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="flex justify-end gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleEditClick(unit)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDeleteClick(unit)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -389,4 +391,3 @@ export default function UnitsPage() {
     </>
   );
 }
-
