@@ -21,6 +21,7 @@ export interface IngredientVariant {
 
 export interface Ingredient {
   id:string;
+  kitchenId: string; // Added for multi-tenancy
   name: string;
   categoryId: string;
   variants: IngredientVariant[];
@@ -29,6 +30,7 @@ export interface Ingredient {
 
 export interface Dish {
   id: string;
+  kitchenId: string; // Added for multi-tenancy
   name: string;
   description: string;
   variants: string[];
@@ -37,6 +39,7 @@ export interface Dish {
 
 export interface Order {
   id: string;
+  kitchenId: string; // Added for multi-tenancy
   dateGenerated: string;
   dayRange: string;
   status: "Pending" | "Completed" | "Cancelled";
@@ -44,6 +47,7 @@ export interface Order {
 
 export interface RationScaleItem {
     id: string; // This is the ingredientId
+    kitchenId: string; // Added for multi-tenancy
     name: string;
     categoryId: string;
     quantity: number;
@@ -70,5 +74,6 @@ export interface MealSection {
 
 export interface MenuDefinition {
     day: number;
+    kitchenId: string; // Added for multi-tenancy
     sections: MealSection[];
 }
