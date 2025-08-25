@@ -43,14 +43,48 @@ export const unitsOfMeasure: UnitOfMeasure[] = [
 ];
 
 export const ingredients: Ingredient[] = [
-  { id: 'P001', name: 'Eggs Large Fresh (B)', categoryId: 'CAT001', variants: [{ id: 'v001', packagingSize: '30', unitOfMeasureId: 'uom001', stock: 0 }] },
-  { id: 'P002', name: 'Eggs Large Fresh (B) (VEG)', categoryId: 'CAT001', variants: [{ id: 'v002', packagingSize: '90', unitOfMeasureId: 'uom001', stock: 0 }] },
+  { 
+    id: 'P001', 
+    name: 'Eggs Large Fresh (B)', 
+    categoryId: 'CAT001', 
+    variants: [
+      { id: 'v001a', packagingSize: '30', unitOfMeasureId: 'uom001', stock: 0 },
+      { id: 'v001b', packagingSize: '12', unitOfMeasureId: 'uom001', stock: 0 },
+      { id: 'v001c', packagingSize: '1', unitOfMeasureId: 'uom001', stock: 0 },
+    ] 
+  },
+  { 
+    id: 'P002', 
+    name: 'Eggs Large Fresh (B) (VEG)', 
+    categoryId: 'CAT001', 
+    variants: [
+      { id: 'v002a', packagingSize: '30', unitOfMeasureId: 'uom001', stock: 0 },
+      { id: 'v002b', packagingSize: '12', unitOfMeasureId: 'uom001', stock: 0 },
+    ] 
+  },
   { id: 'P003', name: 'Bacon Sliced Middle (B)', categoryId: 'CAT002', variants: [{ id: 'v003', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
-  { id: 'P004', name: 'Bacon Sliced Shoulder (B)', categoryId: 'CAT002', variants: [{ id: 'v004', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { 
+    id: 'P004', 
+    name: 'Bacon Sliced Shoulder (B)', 
+    categoryId: 'CAT002', 
+    variants: [
+      { id: 'v004a', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 },
+      { id: 'v004b', packagingSize: '500', unitOfMeasureId: 'uom003', stock: 0 },
+    ] 
+  },
   { id: 'P005', name: 'Bacon Sliced Streaky (B)', categoryId: 'CAT002', variants: [{ id: 'v005', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
   { id: 'P006', name: 'Bean Salad (Sous Bone) (VEG) (B)', categoryId: 'CAT002', variants: [{ id: 'v006', packagingSize: '5', unitOfMeasureId: 'uom004', stock: 0 }] },
   { id: 'P007', name: 'Beans Butter Dry (VEG) (B)', categoryId: 'CAT002', variants: [{ id: 'v007', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
-  { id: 'P008', name: 'Beef Ground Mince (B)', categoryId: 'CAT002', variants: [{ id: 'v008', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 }] },
+  { 
+    id: 'P008', 
+    name: 'Beef Ground Mince (B)', 
+    categoryId: 'CAT002', 
+    variants: [
+      { id: 'v008a', packagingSize: '1', unitOfMeasureId: 'uom002', stock: 0 },
+      { id: 'v008b', packagingSize: '5', unitOfMeasureId: 'uom002', stock: 0 },
+      { id: 'v008c', packagingSize: '500', unitOfMeasureId: 'uom003', stock: 0 },
+    ] 
+  },
 ];
 
 export const dishes: Dish[] = [
