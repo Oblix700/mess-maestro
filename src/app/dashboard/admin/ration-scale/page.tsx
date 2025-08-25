@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -26,13 +26,76 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ingredients, categories, unitsOfMeasure, rationScaleItems as initialRationScaleItems } from '@/lib/placeholder-data';
-import type { RationScaleItem } from '@/lib/types';
+import { collection, getDocs } from 'firebase/firestore';
+import type { RationScaleItem, Ingredient, Category, UnitOfMeasure } from '@/lib/types';
+import { firestore } from '@/lib/firebase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function RationScalePage() {
-  const [items, setItems] = useState<RationScaleItem[]>(initialRationScaleItems);
+  const [items, setItems] = useState<RationScaleItem[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [unitsOfMeasure, setUnitsOfMeasure] = useState<UnitOfMeasure[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [nameFilter, setNameFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [rationScaleSnap, ingredientsSnap, categoriesSnap, uomSnap] = await Promise.all([
+          getDocs(collection(firestore, 'rationScaleItems')), // Assuming 'rationScaleItems' is the collection name
+          getDocs(collection(firestore, 'ingredients')),
+          getDocs(collection(firestore, 'categories')),
+          getDocs(collection(firestore, 'unitsOfMeasure')),
+        ]);
+
+        const rationScaleData = rationScaleSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as RationScaleItem));
+        const ingredientsData = ingredientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
+        const categoriesData = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+        const uomData = uomSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnitOfMeasure));
+
+        // Note: For now, we assume rationScaleItems are derived from ingredients.
+        // This logic might need adjustment based on the actual data model for ration scales.
+        // A more robust solution might involve a dedicated `rationScaleItems` collection.
+        // For now, we'll map ingredients to ration scale items.
+        const mappedRationScaleItems = ingredientsData.map(ing => ({
+            id: ing.id,
+            kitchenId: ing.kitchenId,
+            name: ing.name,
+            categoryId: ing.categoryId,
+            quantity: 0, // Default quantity, should be fetched from rationScaleItems collection
+            unitOfMeasureId: ing.variants[0]?.unitOfMeasureId || '', // Default UOM
+            variants: ing.variants,
+        }));
+        
+        // If rationScaleData is available, merge it with the mapped items
+        const finalItems = mappedRationScaleItems.map(item => {
+            const foundScale = rationScaleData.find(scale => scale.id === item.id);
+            return foundScale ? { ...item, ...foundScale } : item;
+        });
+
+        setItems(finalItems);
+        setIngredients(ingredientsData);
+        setCategories(categoriesData);
+        setUnitsOfMeasure(uomData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch data from the database.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [toast]);
+
 
   const getIngredientInfo = (ingredientId: string) => {
     return ingredients.find(i => i.id === ingredientId) || { name: 'N/A', categoryId: '' };
@@ -63,10 +126,10 @@ export default function RationScalePage() {
       const ingredientInfo = getIngredientInfo(item.id);
       const categoryName = getCategoryName(ingredientInfo.categoryId).toLowerCase();
       const nameMatches = ingredientInfo.name.toLowerCase().includes(nameFilter.toLowerCase());
-      const categoryMatches = categoryName.includes(categoryFilter.toLowerCase());
+      const categoryMatches = categoryFilter === '' || categoryName.includes(categoryFilter.toLowerCase());
       return nameMatches && categoryMatches;
     });
-  }, [items, nameFilter, categoryFilter]);
+  }, [items, nameFilter, categoryFilter, categories, ingredients]);
 
   return (
     <Card>
@@ -106,7 +169,11 @@ export default function RationScalePage() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {filteredItems.map((item) => {
+                {isLoading ? (
+                    <TableRow>
+                        <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                    </TableRow>
+                ) : filteredItems.map((item) => {
                     const ingredientInfo = getIngredientInfo(item.id);
                     return (
                         <TableRow key={item.id}>
@@ -147,3 +214,5 @@ export default function RationScalePage() {
     </Card>
   );
 }
+
+    

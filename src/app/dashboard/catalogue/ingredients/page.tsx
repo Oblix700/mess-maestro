@@ -218,7 +218,7 @@ export default function IngredientsPage() {
                 <TableHead className="w-[25%]">Name</TableHead>
                 <TableHead className="w-[20%]">Category</TableHead>
                 <TableHead>Packaging Options</TableHead>
-                <TableHead className="w-[80px]">
+                <TableHead>
                     <span className="sr-only">Actions</span>
                 </TableHead>
                 </TableRow>
@@ -259,21 +259,21 @@ export default function IngredientsPage() {
                         </div>
                     </TableCell>
                     <TableCell>
-                    <div className="flex items-center justify-end gap-2">
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                            <DropdownMenuItem>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
+                      <div className="flex items-center justify-end gap-2">
+                          <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem>Edit</DropdownMenuItem>
+                              <DropdownMenuItem>Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                          </DropdownMenu>
+                      </div>
                     </TableCell>
                 </TableRow>
                 ))}
@@ -358,3 +358,5 @@ export default function IngredientsPage() {
     </>
   );
 }
+
+    
