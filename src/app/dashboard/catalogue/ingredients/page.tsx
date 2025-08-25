@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -43,8 +43,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MoreHorizontal, PlusCircle, X } from 'lucide-react';
-import { ingredients as initialIngredients, categories, unitsOfMeasure } from '@/lib/placeholder-data';
-import type { Ingredient } from '@/lib/types';
+import type { Ingredient, Category, UnitOfMeasure } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -56,9 +55,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { firestore } from '@/lib/firebase/client';
+import { collection, getDocs } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function IngredientsPage() {
-  const [ingredients, setIngredients] = useState<Ingredient[]>(initialIngredients);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [unitsOfMeasure, setUnitsOfMeasure] = useState<UnitOfMeasure[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ingredientId: string, variantId: string} | null>(null);
   const [nameFilter, setNameFilter] = useState('');
@@ -67,6 +73,38 @@ export default function IngredientsPage() {
   const [isAddVariantDialogOpen, setIsAddVariantDialogOpen] = useState(false);
   const [selectedIngredientId, setSelectedIngredientId] = useState<string | null>(null);
   const [newVariant, setNewVariant] = useState({ packagingSize: '', unitOfMeasureId: '' });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const [ingredientsSnap, categoriesSnap, uomSnap] = await Promise.all([
+                getDocs(collection(firestore, 'ingredients')),
+                getDocs(collection(firestore, 'categories')),
+                getDocs(collection(firestore, 'unitsOfMeasure')),
+            ]);
+
+            const ingredientsData = ingredientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
+            const categoriesData = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+            const uomData = uomSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnitOfMeasure));
+
+            setIngredients(ingredientsData);
+            setCategories(categoriesData);
+            setUnitsOfMeasure(uomData);
+        } catch (error) {
+            console.error("Error fetching data: ", error);
+            toast({
+              variant: "destructive",
+              title: "Error fetching data",
+              description: "Could not fetch data from the database.",
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchData();
+  }, [toast]);
 
 
   const getUomName = (uomId: string) => {
@@ -86,6 +124,7 @@ export default function IngredientsPage() {
   const handleAddVariant = () => {
     if (!selectedIngredientId || !newVariant.packagingSize || !newVariant.unitOfMeasureId) return;
 
+    // This is a local update for now. To make it persistent, you'd need a Firestore update call.
     setIngredients(ingredients.map(ing => {
       if (ing.id === selectedIngredientId) {
         const newVariantToAdd = {
@@ -116,6 +155,7 @@ export default function IngredientsPage() {
     if (!itemToDelete) return;
     const { ingredientId, variantId } = itemToDelete;
 
+    // This is a local update for now. To make it persistent, you'd need a Firestore update call.
     setIngredients(ingredients.map(ing => {
       if (ing.id === ingredientId) {
         return {
@@ -136,7 +176,7 @@ export default function IngredientsPage() {
       const categoryMatches = categoryName.includes(categoryFilter.toLowerCase());
       return nameMatches && categoryMatches;
     });
-  }, [ingredients, nameFilter, categoryFilter]);
+  }, [ingredients, nameFilter, categoryFilter, categories]);
   
 
   return (
@@ -184,7 +224,11 @@ export default function IngredientsPage() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {filteredIngredients.map((ingredient) => (
+                {isLoading ? (
+                    <TableRow>
+                        <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                    </TableRow>
+                ) : filteredIngredients.map((ingredient) => (
                 <TableRow key={ingredient.id}>
                     <TableCell className="font-medium">{ingredient.name}</TableCell>
                     <TableCell>
@@ -192,7 +236,7 @@ export default function IngredientsPage() {
                     </TableCell>
                     <TableCell>
                         <div className="flex flex-wrap items-center gap-2">
-                            {ingredient.variants.length > 0 ? (
+                            {ingredient.variants && ingredient.variants.length > 0 ? (
                                 ingredient.variants.map((variant) => (
                                     <Badge key={variant.id} variant="secondary" className="group pl-3 pr-1 py-1 text-sm">
                                         <span>{variant.packagingSize}{getUomName(variant.unitOfMeasureId)}</span>

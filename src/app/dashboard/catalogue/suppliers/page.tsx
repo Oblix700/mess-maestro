@@ -36,20 +36,46 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import { suppliers as initialSuppliers } from '@/lib/placeholder-data';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Supplier } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { firestore } from '@/lib/firebase/client';
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SuppliersPage() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
     null
   );
+  const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      setIsLoading(true);
+      try {
+        const suppliersCollection = collection(firestore, 'suppliers');
+        const querySnapshot = await getDocs(suppliersCollection);
+        const suppliersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
+        setSuppliers(suppliersData);
+      } catch (error) {
+        console.error("Error fetching suppliers: ", error);
+        toast({
+          variant: "destructive",
+          title: "Error fetching data",
+          description: "Could not fetch suppliers from the database.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSuppliers();
+  }, [toast]);
+  
   // For now, we'll just show all suppliers. 
   // Later this will be filtered by the logged-in user's kitchenId.
   const filteredSuppliers = suppliers;
@@ -58,31 +84,64 @@ export default function SuppliersPage() {
     setSelectedSupplier(supplier);
     setIsEditDialogOpen(true);
   };
+  
+  const handleAddClick = () => {
+    // Assuming a default kitchenId or logic to get the current user's kitchenId
+    setSelectedSupplier({ id: '', name: '', contactPerson: '', phone: '', email: '', kitchenId: 'all' });
+    setIsEditDialogOpen(true);
+  }
 
   const handleDeleteClick = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleUpdateSupplier = () => {
+  const handleSaveSupplier = async () => {
     if (!selectedSupplier) return;
-    setSuppliers(
-      suppliers.map((s) =>
-        s.id === selectedSupplier.id ? selectedSupplier : s
-      )
-    );
+    
+    if (selectedSupplier.id) {
+        try {
+            const supplierDocRef = doc(firestore, 'suppliers', selectedSupplier.id);
+            const { id, ...supplierData } = selectedSupplier;
+            await updateDoc(supplierDocRef, supplierData);
+            setSuppliers(suppliers.map((s) => (s.id === selectedSupplier.id ? selectedSupplier : s)));
+            toast({ title: "Success", description: "Supplier updated successfully." });
+        } catch (error) {
+            console.error("Error updating supplier: ", error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to update supplier." });
+        }
+    } else {
+        try {
+            const { id, ...newSupplierData } = selectedSupplier;
+            const docRef = await addDoc(collection(firestore, 'suppliers'), newSupplierData);
+            setSuppliers([...suppliers, { id: docRef.id, ...newSupplierData }]);
+            toast({ title: "Success", description: "Supplier added successfully." });
+        } catch (error) {
+            console.error("Error adding supplier: ", error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to add supplier." });
+        }
+    }
+
     setIsEditDialogOpen(false);
     setSelectedSupplier(null);
   };
 
-  const handleDeleteSupplier = () => {
-    if (!selectedSupplier) return;
-    setSuppliers(suppliers.filter((s) => s.id !== selectedSupplier.id));
+
+  const handleDeleteSupplier = async () => {
+    if (!selectedSupplier || !selectedSupplier.id) return;
+    try {
+        await deleteDoc(doc(firestore, 'suppliers', selectedSupplier.id));
+        setSuppliers(suppliers.filter((s) => s.id !== selectedSupplier.id));
+        toast({ title: "Success", description: "Supplier deleted successfully." });
+    } catch (error) {
+        console.error("Error deleting supplier: ", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to delete supplier." });
+    }
     setIsDeleteDialogOpen(false);
     setSelectedSupplier(null);
   };
 
-  const handleFieldChange = (field: keyof Supplier, value: string) => {
+  const handleFieldChange = (field: keyof Omit<Supplier, 'id'>, value: string) => {
     if (selectedSupplier) {
       setSelectedSupplier({ ...selectedSupplier, [field]: value });
     }
@@ -99,7 +158,7 @@ export default function SuppliersPage() {
                 Manage your mess's suppliers.
               </CardDescription>
             </div>
-            <Button size="sm" className="gap-1">
+            <Button size="sm" className="gap-1" onClick={handleAddClick}>
               <PlusCircle className="h-4 w-4" />
               Add Supplier
             </Button>
@@ -119,7 +178,11 @@ export default function SuppliersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSuppliers.map((supplier) => (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center">Loading...</TableCell>
+                </TableRow>
+              ) : filteredSuppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
                   <TableCell className="font-medium">{supplier.name}</TableCell>
                   <TableCell>{supplier.contactPerson}</TableCell>
@@ -155,7 +218,7 @@ export default function SuppliersPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Supplier</DialogTitle>
+            <DialogTitle>{selectedSupplier?.id ? 'Edit Supplier' : 'Add Supplier'}</DialogTitle>
             <DialogDescription>
               Make changes to the supplier. Click save when you're done.
             </DialogDescription>
@@ -215,7 +278,7 @@ export default function SuppliersPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleUpdateSupplier}>Save changes</Button>
+            <Button onClick={handleSaveSupplier}>Save changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

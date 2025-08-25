@@ -36,19 +36,46 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import { units as initialUnits } from '@/lib/placeholder-data';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Unit } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { firestore } from '@/lib/firebase/client';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function UnitsPage() {
-  const [units, setUnits] = useState<Unit[]>(initialUnits);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(
     null
   );
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchUnits = async () => {
+      setIsLoading(true);
+      try {
+        const unitsCollection = collection(firestore, 'units');
+        const querySnapshot = await getDocs(unitsCollection);
+        const unitsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
+        setUnits(unitsData);
+      } catch (error) {
+        console.error("Error fetching units: ", error);
+        toast({
+          variant: "destructive",
+          title: "Error fetching data",
+          description: "Could not fetch units from the database.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUnits();
+  }, [toast]);
 
   const handleEditClick = (unit: Unit) => {
     setSelectedUnit(unit);
@@ -59,26 +86,61 @@ export default function UnitsPage() {
     setSelectedUnit(unit);
     setIsDeleteDialogOpen(true);
   };
+  
+  const handleAddClick = () => {
+    setSelectedUnit({ unit: '', mess: '' }); // Prepare a new unit object
+    setIsEditDialogOpen(true);
+  }
 
-  const handleUpdateUnit = () => {
+  const handleSaveUnit = async () => {
     if (!selectedUnit) return;
-    setUnits(
-      units.map((u) =>
-        u.id === selectedUnit.id ? selectedUnit : u
-      )
-    );
+    
+    // Distinguish between Add and Edit
+    if (selectedUnit.id) {
+        // Update existing unit
+        try {
+            const unitDocRef = doc(firestore, 'units', selectedUnit.id);
+            const { id, ...unitData } = selectedUnit;
+            await updateDoc(unitDocRef, unitData);
+            setUnits(units.map((u) => (u.id === selectedUnit.id ? selectedUnit : u)));
+            toast({ title: "Success", description: "Unit updated successfully." });
+        } catch (error) {
+            console.error("Error updating unit: ", error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to update unit." });
+        }
+    } else {
+        // Add new unit
+        try {
+            const { id, ...newUnitData } = selectedUnit;
+            const docRef = await addDoc(collection(firestore, 'units'), newUnitData);
+            setUnits([...units, { id: docRef.id, ...newUnitData }]);
+            toast({ title: "Success", description: "Unit added successfully." });
+        } catch (error) {
+            console.error("Error adding unit: ", error);
+            toast({ variant: "destructive", title: "Error", description: "Failed to add unit." });
+        }
+    }
+    
     setIsEditDialogOpen(false);
     setSelectedUnit(null);
   };
 
-  const handleDeleteUnit = () => {
-    if (!selectedUnit) return;
-    setUnits(units.filter((u) => u.id !== selectedUnit.id));
+
+  const handleDeleteUnit = async () => {
+    if (!selectedUnit || !selectedUnit.id) return;
+    try {
+        await deleteDoc(doc(firestore, 'units', selectedUnit.id));
+        setUnits(units.filter((u) => u.id !== selectedUnit.id));
+        toast({ title: "Success", description: "Unit deleted successfully." });
+    } catch (error) {
+        console.error("Error deleting unit: ", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to delete unit." });
+    }
     setIsDeleteDialogOpen(false);
     setSelectedUnit(null);
   };
 
-  const handleFieldChange = (field: keyof Unit, value: string) => {
+  const handleFieldChange = (field: keyof Omit<Unit, 'id'>, value: string) => {
     if (selectedUnit) {
       setSelectedUnit({ ...selectedUnit, [field]: value });
     }
@@ -95,7 +157,7 @@ export default function UnitsPage() {
                 Manage your kitchens and messes.
               </CardDescription>
             </div>
-            <Button size="sm" className="gap-1">
+            <Button size="sm" className="gap-1" onClick={handleAddClick}>
               <PlusCircle className="h-4 w-4" />
               Add Unit
             </Button>
@@ -113,7 +175,11 @@ export default function UnitsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {units.map((unit) => (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center">Loading...</TableCell>
+                </TableRow>
+              ) : units.map((unit) => (
                 <TableRow key={unit.id}>
                   <TableCell className="font-medium">{unit.unit}</TableCell>
                   <TableCell>{unit.mess}</TableCell>
@@ -143,13 +209,13 @@ export default function UnitsPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
+      {/* Edit/Add Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Unit</DialogTitle>
+            <DialogTitle>{selectedUnit?.id ? 'Edit Unit' : 'Add Unit'}</DialogTitle>
             <DialogDescription>
-              Make changes to the unit. Click save when you're done.
+              {selectedUnit?.id ? 'Make changes to the unit. Click save when you\'re done.' : 'Add a new unit to the database.'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -183,7 +249,7 @@ export default function UnitsPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleUpdateUnit}>Save changes</Button>
+            <Button onClick={handleSaveUnit}>Save changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
