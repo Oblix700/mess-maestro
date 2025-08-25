@@ -110,12 +110,12 @@ export const orders: Order[] = [
 ];
 
 export const rationScaleItems: RationScaleItem[] = [
-    { id: 'P001', name: 'Eggs Large Fresh (B)', categoryId: 'CAT001', quantity: 2, unitOfMeasureId: 'uom001'},
-    { id: 'P002', name: 'Eggs Large Fresh (B) (VEG)', categoryId: 'CAT001', quantity: 2, unitOfMeasureId: 'uom001' },
-    { id: 'P003', name: 'Bacon Sliced Middle (B)', categoryId: 'CAT002', quantity: 0.06, unitOfMeasureId: 'uom002' },
-    { id: 'P004', name: 'Bacon Sliced Shoulder (B)', categoryId: 'CAT002', quantity: 0.06, unitOfMeasureId: 'uom002' },
-    { id: 'P005', name: 'Bacon Sliced Streaky (B)', categoryId: 'CAT002', quantity: 0.06, unitOfMeasureId: 'uom002' },
-    { id: 'P006', name: 'Bean Salad (Sous Bone) (VEG) (B)', categoryId: 'CAT002', quantity: 0.08, unitOfMeasureId: 'uom002' },
-    { id: 'P007', name: 'Beans Butter Dry (VEG) (B)', categoryId: 'CAT002', quantity: 0.08, unitOfMeasureId: 'uom002' },
-    { id: 'P008', name: 'Beef Ground Mince (B)', categoryId: 'CAT002', quantity: 0.12, unitOfMeasureId: 'uom002' },
+    { id: 'P001', quantity: 2, unitOfMeasureId: 'uom001'},
+    { id: 'P002', quantity: 2, unitOfMeasureId: 'uom001' },
+    { id: 'P003', quantity: 0.06, unitOfMeasureId: 'uom002' },
+    { id: 'P004', quantity: 0.06, unitOfMeasureId: 'uom002' },
+    { id: 'P005', quantity: 0.06, unitOfMeasureId: 'uom002' },
+    { id: 'P006', quantity: 0.08, unitOfMeasureId: 'uom002' },
+    { id: 'P007', quantity: 0.08, unitOfMeasureId: 'uom002' },
+    { id: 'P008', quantity: 0.12, unitOfMeasureId: 'uom002' },
 ];

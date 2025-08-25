@@ -48,9 +48,7 @@ export interface Order {
 }
 
 export interface RationScaleItem {
-    id: string;
-    name: string;
-    categoryId: string;
+    id: string; // This is the ingredientId
     quantity: number;
     unitOfMeasureId: string;
 }
