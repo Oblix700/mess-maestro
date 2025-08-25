@@ -1,5 +1,4 @@
 
-
 export interface Category {
   id: string;
   name: string;
@@ -10,6 +9,12 @@ export interface UnitOfMeasure {
   id: string;
   name: string;
   description: string;
+}
+
+export interface Unit {
+  id: string;
+  unit: string;
+  mess: string;
 }
 
 export interface IngredientVariant {

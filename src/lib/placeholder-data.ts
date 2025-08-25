@@ -1,5 +1,29 @@
 
-import type { Category, Ingredient, Dish, Order, UnitOfMeasure, RationScaleItem } from "./types";
+import type { Category, Ingredient, Dish, Order, UnitOfMeasure, RationScaleItem, Unit } from "./types";
+
+export const units: Unit[] = [
+    { id: '1', unit: '68 AS', mess: 'Combined Mess' },
+    { id: '2', unit: 'AFB BSPT', mess: 'Off Mess' },
+    { id: '3', unit: 'AFB BSPT', mess: 'Combined Mess' },
+    { id: '4', unit: 'AFB DBN', mess: 'Combined Mess' },
+    { id: '5', unit: 'AFB HSPT', mess: 'Off Mess' },
+    { id: '6', unit: 'AFB HSPT', mess: 'Nco Mess' },
+    { id: '7', unit: 'AFB HSPT', mess: 'Combined Mess' },
+    { id: '8', unit: 'AFB HSPT', mess: 'Gym' },
+    { id: '9', unit: 'AFB LBWG', mess: 'Off Mess' },
+    { id: '10', unit: 'AFB LBWG', mess: 'Combined Mess' },
+    { id: '11', unit: 'AFB LBWG', mess: 'Cpl Mess' },
+    { id: '12', unit: 'AFB MKD', mess: 'Combined Mess' },
+    { id: '13', unit: 'AFB OVB', mess: 'Combined Mess' },
+    { id: '14', unit: 'AFB WKLF', mess: 'Off Mess' },
+    { id: '15', unit: 'AFB WKLF', mess: 'Ladies mess' },
+    { id: '16', unit: 'AFB WKLF', mess: 'NCO Mess' },
+    { id: '17', unit: 'AFB WKLF', mess: 'Ditholo Mess' },
+    { id: '18', unit: 'AFB YPLT', mess: 'Off Mess' },
+    { id: '19', unit: 'AFB YPLT', mess: 'Combined Mess' },
+    { id: '20', unit: 'AFB ZWKP', mess: 'Combined Mess' },
+    { id: '21', unit: 'SAAF COL', mess: 'Combined Mess' },
+];
 
 export const categories: Category[] = [
     { id: 'CAT001', name: 'BREAKFAST EGG', description: '' },

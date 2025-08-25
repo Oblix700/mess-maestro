@@ -15,6 +15,7 @@ import {
   Settings,
   Scaling,
   Calculator,
+  Building,
 } from "lucide-react";
 import {
   Collapsible,
@@ -67,6 +68,7 @@ const menuItems = [
     label: "Admin",
     icon: Settings,
     subItems: [
+        { href: "/dashboard/admin/units", label: "Units", icon: Building },
         { href: "/dashboard/admin/uom", label: "UOM", icon: Scaling },
         { href: "/dashboard/admin/ration-scale", label: "Ration Scale", icon: Calculator },
     ]
