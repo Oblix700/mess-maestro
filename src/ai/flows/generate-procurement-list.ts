@@ -24,7 +24,7 @@ import type {
   UnitOfMeasure,
 } from '@/lib/types';
 import { getDayOf28DayCycle } from '@/lib/utils';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 export const GenerateProcurementListInputSchema = z.object({
   unitIds: z.array(z.string()).describe('The IDs of the units to generate the list for.'),
@@ -75,30 +75,39 @@ export const generateProcurementList = ai.defineFlow(
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // Fetch strength data for all units and all relevant months
+    // Fetch strength data for all units and all relevant months efficiently
     const strengthsPromises: Promise<{
       unitId: string;
       data: MonthlyStrength | null;
     }>[] = [];
     const uniqueMonths = new Set<string>();
+    
     for (const unitId of unitIds) {
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-            const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
-            if (!uniqueMonths.has(`${unitId}-${monthKey}`)) {
+            const monthKey = `${unitId}_${d.getFullYear()}_${d.getMonth()}`;
+            if (!uniqueMonths.has(monthKey)) {
                 strengthsPromises.push(getStrengthForMonth(unitId, d.getFullYear(), d.getMonth()).then(data => ({ unitId, data })));
-                uniqueMonths.add(`${unitId}-${monthKey}`);
+                uniqueMonths.add(monthKey);
             }
         }
+        // Reset date for next unit loop
+        start.setDate(new Date(startDate).getDate());
+        end.setDate(new Date(endDate).getDate());
     }
+
     const allStrengthsData = await Promise.all(strengthsPromises);
     const strengthsByUnitMonth = new Map<string, MonthlyStrength | null>();
     allStrengthsData.forEach(item => {
         if(item.data) {
-            strengthsByUnitMonth.set(`${item.unitId}_${item.data.year}_${item.data.month}`, item.data);
+            const key = `${item.unitId}_${item.data.year}_${item.data.month}`;
+            strengthsByUnitMonth.set(key, item.data);
         }
     });
+    
+    const loopStart = new Date(startDate);
+    const loopEnd = new Date(endDate);
 
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    for (let d = new Date(loopStart); d <= loopEnd; d.setDate(d.getDate() + 1)) {
       const cycleDay = getDayOf28DayCycle(d);
       const menu = await getMenuCycle(cycleDay);
 
@@ -108,8 +117,9 @@ export const generateProcurementList = ai.defineFlow(
         const year = d.getFullYear();
         const month = d.getMonth();
         const dayOfMonth = d.getDate();
-
-        const strengthData = strengthsByUnitMonth.get(`${unitId}_${year}_${month}`);
+        
+        const strengthKey = `${unitId}_${year}_${month}`;
+        const strengthData = strengthsByUnitMonth.get(strengthKey);
         const dailyStrength = strengthData?.strengths[dayOfMonth];
 
         if (!dailyStrength) continue;
