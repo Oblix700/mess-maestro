@@ -1,15 +1,16 @@
-"use client";
 
-import { useState } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  SuggestPackagingBreakdownsInput,
-  SuggestPackagingBreakdownsOutput,
-  suggestPackagingBreakdowns,
-} from "@/ai/flows/suggest-packaging-breakdowns";
-import { Button } from "@/components/ui/button";
+  generateProcurementList,
+  GenerateProcurementListInput,
+  GenerateProcurementListOutput,
+} from '@/ai/flows/generate-procurement-list';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -17,9 +18,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -27,61 +28,93 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles } from "lucide-react";
+} from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Sparkles, Check, ChevronsUpDown } from 'lucide-react';
+import type { Unit } from '@/lib/types';
+import { getUnits } from '@/lib/firebase/firestore';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { Badge } from './ui/badge';
 
 const formSchema = z.object({
-  headcount: z.coerce.number().min(1, "Headcount must be at least 1."),
-  dayRange: z.string().min(1, "Day range is required."),
+  unitIds: z.array(z.string()).min(1, 'At least one unit must be selected.'),
+  startDate: z.string().min(1, 'Start date is required.'),
+  endDate: z.string().min(1, 'End date is required.'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-// Mock order items for demonstration
-const mockOrderItems: SuggestPackagingBreakdownsInput["orderItems"] = [
-  { ingredient: "Chicken Breast", quantity: 20, unitOfMeasure: "kg" },
-  { ingredient: "Potato", quantity: 50, unitOfMeasure: "kg" },
-  { ingredient: "Carrot", quantity: 15, unitOfMeasure: "kg" },
-  { ingredient: "Rice", quantity: 40, unitOfMeasure: "kg" },
-];
-
 export function OrderGenerationForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [packagingSuggestions, setPackagingSuggestions] = useState<
-    SuggestPackagingBreakdownsOutput["packagingSuggestions"] | null
-  >(null);
+  const [procurementList, setProcurementList] =
+    useState<GenerateProcurementListOutput | null>(null);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [open, setOpen] = useState(false);
+
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      headcount: 100,
-      dayRange: "1-7",
+      unitIds: [],
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(new Date().setDate(new Date().getDate() + 6))
+        .toISOString()
+        .split('T')[0],
     },
   });
 
+  const selectedUnits = form.watch('unitIds');
+
+  useEffect(() => {
+    const fetchUnitsData = async () => {
+      const unitsData = await getUnits();
+      unitsData.sort((a, b) => a.name.localeCompare(b.name));
+      setUnits(unitsData);
+    };
+    fetchUnitsData();
+  }, []);
+
+  const getUnitName = (unitId: string) => {
+    return units.find((u) => u.id === unitId)?.name || 'Unknown Unit';
+  };
+
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
-    setPackagingSuggestions(null);
+    setProcurementList(null);
     try {
-      const input: SuggestPackagingBreakdownsInput = {
-        orderItems: mockOrderItems.map(item => ({
-            ...item,
-            quantity: item.quantity * (values.headcount / 100) // Adjust quantity by headcount for demo
-        })),
-        preferences: "Use eco-friendly bags for vegetables. Vacuum seal meats.",
+      const input: GenerateProcurementListInput = {
+        unitIds: values.unitIds,
+        startDate: values.startDate,
+        endDate: values.endDate,
       };
-      
-      const result = await suggestPackagingBreakdowns(input);
-      setPackagingSuggestions(result.packagingSuggestions);
-    } catch (error) {
-      console.error("Failed to get packaging suggestions:", error);
+
+      const result = await generateProcurementList(input);
+      setProcurementList(result);
       toast({
-        variant: "destructive",
-        title: "Error",
+        title: 'Success',
+        description: 'Procurement list generated successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to get procurement list:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
         description:
-          "Could not generate packaging suggestions. Please try again.",
+          'Could not generate procurement list. Please try again later.',
       });
     } finally {
       setIsLoading(false);
@@ -95,36 +128,107 @@ export function OrderGenerationForm() {
           <CardHeader>
             <CardTitle>Generate New Order</CardTitle>
             <CardDescription>
-              Specify parameters to generate a procurement order.
+              Specify units and a date range to generate a procurement list.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="headcount">Headcount</Label>
-                <Input
-                  id="headcount"
-                  type="number"
-                  {...form.register("headcount")}
-                />
-                {form.formState.errors.headcount && (
+                <Label>Units / Kitchens</Label>
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className="w-full justify-between h-auto"
+                    >
+                      <div className="flex flex-wrap gap-1">
+                        {selectedUnits.length > 0 ? (
+                          selectedUnits.map((unitId) => (
+                            <Badge key={unitId} variant="secondary">
+                              {getUnitName(unitId)}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="font-normal text-muted-foreground">
+                            Select units...
+                          </span>
+                        )}
+                      </div>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search units..." />
+                      <CommandList>
+                        <CommandEmpty>No units found.</CommandEmpty>
+                        <CommandGroup>
+                          {units.map((unit) => (
+                            <CommandItem
+                              key={unit.id}
+                              value={unit.id}
+                              onSelect={(currentValue) => {
+                                const currentSelection = form.getValues('unitIds');
+                                if (currentSelection.includes(currentValue)) {
+                                  form.setValue('unitIds', currentSelection.filter(id => id !== currentValue));
+                                } else {
+                                  form.setValue('unitIds', [...currentSelection, currentValue]);
+                                }
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  selectedUnits.includes(unit.id)
+                                    ? 'opacity-100'
+                                    : 'opacity-0'
+                                )}
+                              />
+                              {unit.name} - {unit.mess}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+
+                {form.formState.errors.unitIds && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.headcount.message}
+                    {form.formState.errors.unitIds.message}
                   </p>
                 )}
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="dayRange">Day Range</Label>
-                <Input
-                  id="dayRange"
-                  type="text"
-                  {...form.register("dayRange")}
-                />
-                {form.formState.errors.dayRange && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.dayRange.message}
-                  </p>
-                )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    {...form.register('startDate')}
+                  />
+                  {form.formState.errors.startDate && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.startDate.message}
+                    </p>
+                  )}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    {...form.register('endDate')}
+                  />
+                  {form.formState.errors.endDate && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.endDate.message}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -136,54 +240,67 @@ export function OrderGenerationForm() {
                   Generating...
                 </>
               ) : (
-                "Generate Order & Suggest Packaging"
+                'Generate Procurement List'
               )}
             </Button>
           </CardFooter>
         </form>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            AI Packaging Suggestions
+            AI Generated Procurement List
           </CardTitle>
           <CardDescription>
-            Optimal packaging based on your order to minimize waste.
+            A consolidated list of items to order based on your selection.
           </CardDescription>
         </CardHeader>
-        <CardContent className="min-h-[250px]">
+        <CardContent className="min-h-[250px] max-h-[calc(100vh-22rem)] overflow-auto">
           {isLoading && (
             <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin" />
-              <p>Generating suggestions...</p>
+              <p>Analyzing menus, strengths, and stock...</p>
             </div>
           )}
-          {!isLoading && !packagingSuggestions && (
+          {!isLoading && !procurementList && (
             <div className="flex items-center justify-center h-full text-muted-foreground">
-              <p>Suggestions will appear here after generating an order.</p>
+              <p>Your procurement list will appear here.</p>
             </div>
           )}
-          {packagingSuggestions && (
+          {procurementList && (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Ingredient</TableHead>
-                  <TableHead>Package</TableHead>
-                  <TableHead>Qty</TableHead>
-                  <TableHead>Notes</TableHead>
+                  <TableHead className="text-right">Qty to Order</TableHead>
+                  <TableHead>Unit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {packagingSuggestions.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{item.ingredient}</TableCell>
-                    <TableCell>{item.packagingType}</TableCell>
-                    <TableCell>{`${item.quantity} ${item.unitOfMeasure}`}</TableCell>
-                    <TableCell>{item.notes || "-"}</TableCell>
+                {procurementList.itemsToProcure.length > 0 ? (
+                  procurementList.itemsToProcure.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        {item.ingredientName}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {item.quantityToOrder.toFixed(2)}
+                      </TableCell>
+                      <TableCell>{item.unitOfMeasure}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center text-muted-foreground"
+                    >
+                      No items need to be procured for the selected period.
+                    </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           )}
