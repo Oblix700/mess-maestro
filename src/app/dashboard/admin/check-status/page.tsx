@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, XCircle, Loader2, Database } from 'lucide-react';
 import { firestore } from '@/lib/firebase/client';
 import { collection, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
-import { units, categories, unitsOfMeasure, suppliers, ingredients, dishes } from '@/lib/data';
+import { units, categories, unitsOfMeasure, suppliers, ingredients, dishes, orders } from '@/lib/data';
 
 
 export default function CheckStatusPage() {
@@ -73,40 +73,39 @@ export default function CheckStatusPage() {
     try {
         const batch = writeBatch(firestore);
 
-        // Seed Units
-        units.forEach(unit => {
-            const docRef = doc(collection(firestore, 'units'), unit.id);
-            batch.set(docRef, unit);
+        units.forEach(item => {
+            const docRef = doc(collection(firestore, 'units'), item.id);
+            batch.set(docRef, item);
         });
         
-        // Seed Categories
-        categories.forEach(category => {
-            const docRef = doc(collection(firestore, 'categories'), category.id);
-            batch.set(docRef, category);
+        categories.forEach(item => {
+            const docRef = doc(collection(firestore, 'categories'), item.id);
+            batch.set(docRef, item);
         });
 
-        // Seed UOM
-        unitsOfMeasure.forEach(uom => {
-            const docRef = doc(collection(firestore, 'unitsOfMeasure'), uom.id);
-            batch.set(docRef, uom);
+        unitsOfMeasure.forEach(item => {
+            const docRef = doc(collection(firestore, 'unitsOfMeasure'), item.id);
+            batch.set(docRef, item);
         });
         
-        // Seed Suppliers
-        suppliers.forEach(supplier => {
-            const docRef = doc(collection(firestore, 'suppliers'), supplier.id);
-            batch.set(docRef, supplier);
+        suppliers.forEach(item => {
+            const docRef = doc(collection(firestore, 'suppliers'), item.id);
+            batch.set(docRef, item);
         });
         
-        // Seed Ingredients
-        ingredients.forEach(ingredient => {
-            const docRef = doc(collection(firestore, 'ingredients'), ingredient.id);
-            batch.set(docRef, ingredient);
+        ingredients.forEach(item => {
+            const docRef = doc(collection(firestore, 'ingredients'), item.id);
+            batch.set(docRef, item);
         });
 
-        // Seed Dishes
-        dishes.forEach(dish => {
-            const docRef = doc(collection(firestore, 'dishes'), dish.id);
-            batch.set(docRef, dish);
+        dishes.forEach(item => {
+            const docRef = doc(collection(firestore, 'dishes'), item.id);
+            batch.set(docRef, item);
+        });
+
+        orders.forEach(item => {
+            const docRef = doc(collection(firestore, 'orders'), item.id);
+            batch.set(docRef, item);
         });
 
         await batch.commit();

@@ -23,11 +23,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
-import { orders } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getOrders } from "@/lib/firebase/firestore";
 
-export default function OrdersPage() {
+export default async function OrdersPage() {
+  const orders = await getOrders();
+
   return (
     <Card>
       <CardHeader>
@@ -47,60 +49,70 @@ export default function OrdersPage() {
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Order ID</TableHead>
-              <TableHead>Date Generated</TableHead>
-              <TableHead>Day Range</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell className="font-medium">{order.id}</TableCell>
-                <TableCell>{order.dateGenerated}</TableCell>
-                <TableCell>{order.dayRange}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      order.status === "Completed"
-                        ? "default"
-                        : order.status === "Pending"
-                        ? "secondary"
-                        : "destructive"
-                    }
-                    className={cn(
-                        order.status === 'Completed' && 'bg-green-600 text-white',
-                        order.status === 'Pending' && 'bg-amber-500 text-white'
-                    )}
-                  >
-                    {order.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>View Details</DropdownMenuItem>
-                      <DropdownMenuItem>Cancel Order</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="relative h-[calc(100vh-14rem)] overflow-auto border rounded-md">
+            <Table>
+            <TableHeader className="sticky top-0 bg-card z-10">
+                <TableRow>
+                <TableHead>Order ID</TableHead>
+                <TableHead>Date Generated</TableHead>
+                <TableHead>Day Range</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>
+                    <span className="sr-only">Actions</span>
+                </TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {orders.length === 0 ? (
+                    <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground">
+                            No orders found.
+                        </TableCell>
+                    </TableRow>
+                ) : (
+                    orders.map((order) => (
+                    <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell>{order.dateGenerated}</TableCell>
+                        <TableCell>{order.dayRange}</TableCell>
+                        <TableCell>
+                        <Badge
+                            variant={
+                            order.status === "Completed"
+                                ? "default"
+                                : order.status === "Pending"
+                                ? "secondary"
+                                : "destructive"
+                            }
+                            className={cn(
+                                order.status === 'Completed' && 'bg-green-600 text-white',
+                                order.status === 'Pending' && 'bg-amber-500 text-white'
+                            )}
+                        >
+                            {order.status}
+                        </Badge>
+                        </TableCell>
+                        <TableCell>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                            <DropdownMenuItem>Cancel Order</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                    ))
+                )}
+            </TableBody>
+            </Table>
+        </div>
       </CardContent>
     </Card>
   );
