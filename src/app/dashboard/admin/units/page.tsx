@@ -228,9 +228,8 @@ export default function UnitsPage() {
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Unit Name</TableHead>
-                  <TableHead>Mess</TableHead>
+                  <TableHead className="w-[80px]">ID</TableHead>
+                  <TableHead>Unit</TableHead>
                   <TableHead>Regions</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -240,13 +239,12 @@ export default function UnitsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : units.map((unit) => (
                   <TableRow key={unit.id}>
                     <TableCell className="font-mono text-xs">{unit.id}</TableCell>
-                    <TableCell className="font-medium">{unit.name}</TableCell>
-                    <TableCell>{unit.mess}</TableCell>
+                    <TableCell className="font-medium">{`${unit.name} - ${unit.mess}`}</TableCell>
                     <TableCell>
                       {unit.regions && unit.regions.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
@@ -306,6 +304,7 @@ export default function UnitsPage() {
                 value={selectedUnit?.name || ''}
                 onChange={(e) => handleFieldChange('name', e.target.value)}
                 className="col-span-3"
+                placeholder="e.g. AFB WKLF"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -317,6 +316,7 @@ export default function UnitsPage() {
                 value={selectedUnit?.mess || ''}
                 onChange={(e) => handleFieldChange('mess', e.target.value)}
                 className="col-span-3"
+                placeholder="e.g. NCO Mess"
               />
             </div>
             <div className="col-span-4">
