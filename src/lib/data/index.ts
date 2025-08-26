@@ -1,8 +1,10 @@
+
 export * from './categories';
 export * from './dishes';
 export * from './ingredients';
 export * from './orders';
 export * from './ration-scale';
+export * from './regions';
 export * from './suppliers';
 export * from './units';
 export * from './uom';

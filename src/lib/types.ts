@@ -12,6 +12,11 @@ export interface UnitOfMeasure {
   description: string;
 }
 
+export interface Region {
+  id: string;
+  name: string;
+}
+
 export interface Unit {
   id?: string; // Optional because Firestore will generate it
   name: string;
