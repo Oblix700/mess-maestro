@@ -202,8 +202,9 @@ export default function UnitsPage() {
   };
 
   const getSupplierName = (supplierId: string) => {
+    if (!suppliers || suppliers.length === 0) return 'Loading...';
     const supplier = suppliers.find(s => s.id === supplierId);
-    return supplier ? `${supplier.name} (${supplier.regions.join(', ')})` : 'Unknown Supplier';
+    return supplier ? `${supplier.name} (${supplier.regions?.join(', ') || ''})` : 'Unknown Supplier';
   };
 
   return (
