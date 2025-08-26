@@ -62,49 +62,36 @@ export default function UnitsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchUnits = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
         const unitsCollection = collection(firestore, 'units');
-        const querySnapshot = await getDocs(unitsCollection);
-        const unitsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
+        const suppliersCollection = collection(firestore, 'suppliers');
+
+        const [unitsSnapshot, suppliersSnapshot] = await Promise.all([
+            getDocs(unitsCollection),
+            getDocs(suppliersCollection)
+        ]);
+
+        const unitsData = unitsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
+        const suppliersData = suppliersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
+
         setUnits(unitsData);
+        setSuppliers(suppliersData);
+
       } catch (error) {
-        console.error("Error fetching units: ", error);
+        console.error("Error fetching data: ", error);
         toast({
           variant: "destructive",
           title: "Error fetching data",
-          description: "Could not fetch units from the database.",
+          description: "Could not fetch data from the database.",
         });
       } finally {
         setIsLoading(false);
       }
     };
-    fetchUnits();
+    fetchData();
   }, [toast]);
-
-  // Fetch suppliers only when the dialog is opened
-  useEffect(() => {
-    if (isEditDialogOpen) {
-        const fetchSuppliers = async () => {
-            if (suppliers.length > 0) return; // Don't refetch if already loaded
-            try {
-                const suppliersCollection = collection(firestore, 'suppliers');
-                const querySnapshot = await getDocs(suppliersCollection);
-                const suppliersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
-                setSuppliers(suppliersData);
-            } catch (error) {
-                console.error("Error fetching suppliers: ", error);
-                toast({
-                    variant: "destructive",
-                    title: "Error fetching suppliers",
-                    description: "Could not fetch the supplier list for the dialog.",
-                });
-            }
-        };
-        fetchSuppliers();
-    }
-  }, [isEditDialogOpen, suppliers.length, toast]);
 
 
   const handleEditClick = (unit: Unit) => {
