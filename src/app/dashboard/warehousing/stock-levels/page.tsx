@@ -31,9 +31,11 @@ interface StockItem extends IngredientVariant {
   ingredientName: string;
   ingredientId: string;
   isModified: boolean;
+  originalStock: number;
 }
 
 export default function StockLevelsPage() {
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [unitsOfMeasure, setUnitsOfMeasure] = useState<UnitOfMeasure[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,10 +56,13 @@ export default function StockLevelsPage() {
           ingredientName: ingredient.name,
           ingredientId: ingredient.id,
           isModified: false,
+          originalStock: variant.stock, // Store original stock value
         }))
       );
 
       flattenedStockItems.sort((a, b) => a.ingredientName.localeCompare(b.ingredientName));
+      
+      setIngredients(ingredientsData);
       setStockItems(flattenedStockItems);
       setUnitsOfMeasure(uomData);
 
@@ -82,67 +87,64 @@ export default function StockLevelsPage() {
   };
 
   const handleStocktakeChange = (variantId: string, value: string) => {
-    const newStock = parseInt(value, 10);
+    const newStock = value === '' ? 0 : parseInt(value, 10);
     if (isNaN(newStock)) return;
     
     setStockItems(prevItems =>
       prevItems.map(item =>
         item.id === variantId
-          ? { ...item, stock: newStock, isModified: true }
+          ? { ...item, stock: newStock, isModified: item.originalStock !== newStock }
           : item
       )
     );
   };
   
   const handleSaveChanges = async () => {
-    setIsSaving(true);
     const modifiedItems = stockItems.filter(item => item.isModified);
     if (modifiedItems.length === 0) {
       toast({ title: "No changes", description: "No stock levels were modified." });
-      setIsSaving(false);
       return;
     }
     
+    setIsSaving(true);
     const batch = writeBatch(firestore);
 
-    // This is inefficient. In a real app, we'd update only the variant,
-    // not the entire ingredients array. This is a limitation of our current
-    // data structure but we can still make it work.
-    const ingredientsToUpdate = new Map<string, Ingredient>();
-    
-    // First, get the full documents for all ingredients that need updating.
-    for (const item of modifiedItems) {
+    // Group modified items by ingredientId
+    const ingredientsToUpdate = new Map<string, StockItem[]>();
+    modifiedItems.forEach(item => {
       if (!ingredientsToUpdate.has(item.ingredientId)) {
-        const ingredientDoc = await getDoc(doc(firestore, 'ingredients', item.ingredientId));
-        if (ingredientDoc.exists()) {
-          ingredientsToUpdate.set(item.ingredientId, { id: ingredientDoc.id, ...ingredientDoc.data() } as Ingredient);
-        }
+        ingredientsToUpdate.set(item.ingredientId, []);
       }
-    }
-    
-    // Now, update the variants within those ingredient objects.
-    for (const item of modifiedItems) {
-        const ingredient = ingredientsToUpdate.get(item.ingredientId);
-        if (ingredient) {
-            const variantIndex = ingredient.variants.findIndex(v => v.id === item.id);
-            if (variantIndex > -1) {
-                ingredient.variants[variantIndex].stock = item.stock;
-            }
-        }
-    }
-    
-    // Finally, write the updated ingredient objects back to the batch.
-    ingredientsToUpdate.forEach((ingredient, id) => {
-        const { id: docId, ...dataToUpdate } = ingredient;
-        const ingredientRef = doc(firestore, 'ingredients', id);
-        batch.update(ingredientRef, { variants: dataToUpdate.variants });
+      ingredientsToUpdate.get(item.ingredientId)!.push(item);
+    });
+
+    ingredientsToUpdate.forEach((items, ingredientId) => {
+      // Get the original full ingredient from state
+      const originalIngredient = ingredients.find(ing => ing.id === ingredientId);
+      if (!originalIngredient) return;
+
+      // Create a new variants array with the updated stock levels
+      const newVariants = originalIngredient.variants.map(variant => {
+        const modifiedVariant = items.find(item => item.id === variant.id);
+        return modifiedVariant ? { ...variant, stock: modifiedVariant.stock } : variant;
+      });
+
+      // Add the update operation to the batch
+      const ingredientRef = doc(firestore, 'ingredients', ingredientId);
+      batch.update(ingredientRef, { variants: newVariants });
     });
 
     try {
       await batch.commit();
       toast({ title: "Success", description: "Stock levels updated successfully." });
-      // Reset modification flags after saving
-      setStockItems(prev => prev.map(item => ({ ...item, isModified: false })));
+      
+      // Update the originalStock and reset modification flags after saving
+      setStockItems(prev => prev.map(item => ({ 
+        ...item, 
+        isModified: false,
+        originalStock: item.stock
+      })));
+
     } catch (error) {
       console.error("Error updating stock levels:", error);
       toast({ variant: "destructive", title: "Error", description: "Failed to update stock levels." });
@@ -192,15 +194,14 @@ export default function StockLevelsPage() {
                 </TableRow>
               ) : (
                 stockItems.map(item => {
-                  const originalStock = stockItems.find(si => si.id === item.id && !si.isModified)?.stock ?? item.stock;
-                  const discrepancy = item.stock - originalStock;
+                  const discrepancy = item.stock - item.originalStock;
 
                   return (
                     <TableRow key={item.id} className={cn(item.isModified && "bg-blue-50 dark:bg-blue-900/20")}>
                         <TableCell className="font-medium">
                         {item.ingredientName} - {item.packagingSize}{getUomName(item.unitOfMeasureId)}
                         </TableCell>
-                        <TableCell>{originalStock}</TableCell>
+                        <TableCell>{item.originalStock}</TableCell>
                         <TableCell>
                         <Input
                             type="number"
@@ -217,7 +218,7 @@ export default function StockLevelsPage() {
                             discrepancy > 0 && "text-green-600"
                         )}
                         >
-                        {discrepancy !== 0 ? discrepancy : "-"}
+                        {discrepancy !== 0 ? (discrepancy > 0 ? `+${discrepancy}`: discrepancy) : "-"}
                         </TableCell>
                     </TableRow>
                   );
