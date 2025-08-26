@@ -72,6 +72,7 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
     setIsLoading(true);
 
     if (selectedRegion.id) {
+        // Update existing region
         try {
             const regionDocRef = doc(firestore, 'regions', selectedRegion.id);
             const { id, ...regionData } = selectedRegion;
@@ -83,6 +84,7 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
             toast({ variant: "destructive", title: "Error", description: "Failed to update region." });
         }
     } else {
+        // Add new region
         try {
             const { id, ...newRegionData } = selectedRegion;
             const docRef = await addDoc(collection(firestore, 'regions'), newRegionData);
@@ -94,9 +96,9 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
         }
     }
 
+    setIsLoading(false);
     setIsEditDialogOpen(false);
     setSelectedRegion(null);
-    setIsLoading(false);
   };
 
   const handleDeleteRegion = async () => {
@@ -110,9 +112,9 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
         console.error("Error deleting region: ", error);
         toast({ variant: "destructive", title: "Error", description: "Failed to delete region. It might be in use by a supplier or unit." });
     }
+    setIsLoading(false);
     setIsDeleteDialogOpen(false);
     setSelectedRegion(null);
-    setIsLoading(false);
   };
 
   return (
@@ -134,11 +136,7 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={2} className="text-center">Loading...</TableCell>
-              </TableRow>
-            ) : regions.length === 0 ? (
+            {regions.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={2} className="text-center text-muted-foreground">No regions found.</TableCell>
                 </TableRow>
@@ -234,4 +232,3 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
     </>
   );
 }
-
