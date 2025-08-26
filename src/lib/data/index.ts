@@ -8,6 +8,7 @@ export * from './suppliers';
 export * from './units';
 export * from './uom';
 export * from './users';
+export * from './menu-cycle-data';
 
 const now = new Date();
 const formatDate = (date: Date) => {

@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, XCircle, Loader2, Database } from 'lucide-react';
 import { firestore } from '@/lib/firebase/client';
 import { collection, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
-import { units, categories, unitsOfMeasure, suppliers, ingredients, dishes, orders, users } from '@/lib/data';
+import { units, categories, unitsOfMeasure, suppliers, ingredients, dishes, orders, users, menuCycle, rationScaleItems, regions } from '@/lib/data';
 
 
 export default function CheckStatusPage() {
@@ -73,6 +73,11 @@ export default function CheckStatusPage() {
     try {
         const batch = writeBatch(firestore);
 
+        regions.forEach(item => {
+            const docRef = doc(collection(firestore, 'regions'), item.id);
+            batch.set(docRef, item);
+        });
+
         units.forEach(item => {
             const docRef = doc(collection(firestore, 'units'), item.id);
             batch.set(docRef, item);
@@ -97,6 +102,11 @@ export default function CheckStatusPage() {
             const docRef = doc(collection(firestore, 'ingredients'), item.id);
             batch.set(docRef, item);
         });
+        
+        rationScaleItems.forEach(item => {
+            const docRef = doc(collection(firestore, 'rationScaleItems'), item.id);
+            batch.set(docRef, item);
+        });
 
         dishes.forEach(item => {
             const docRef = doc(collection(firestore, 'dishes'), item.id);
@@ -110,6 +120,11 @@ export default function CheckStatusPage() {
 
         users.forEach(item => {
             const docRef = doc(collection(firestore, 'users'), item.id);
+            batch.set(docRef, item);
+        });
+
+        menuCycle.forEach(item => {
+            const docRef = doc(collection(firestore, 'menuCycle'), String(item.day));
             batch.set(docRef, item);
         });
 

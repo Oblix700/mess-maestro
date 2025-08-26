@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { MenuDefinition, MealSection, MenuPlanItem } from '@/lib/types';
+import type { MenuDefinition, MealSection, MenuPlanItem, Category, RationScaleItem, UnitOfMeasure, Dish } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -26,46 +26,76 @@ import {
 } from '@/components/ui/select';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { categories, rationScaleItems, unitsOfMeasure } from '@/lib/data';
 import { PlusCircle, Trash2 } from 'lucide-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface MenuDayProps {
   menu: MenuDefinition;
   onItemChange: (sectionId: string, itemId: string, updatedValues: Partial<MenuPlanItem>) => void;
+  categories: Category[];
+  rationScaleItems: RationScaleItem[];
+  unitsOfMeasure: UnitOfMeasure[];
+  dishes: Dish[];
 }
 
-const getIngredientInfo = (ingredientId: string | null) => {
-    if (!ingredientId) return null;
-    return rationScaleItems.find(i => i.id === ingredientId);
+interface MealPlanRowProps {
+    item: MenuPlanItem;
+    sectionId: string;
+    onItemChange: MenuDayProps['onItemChange'];
+    categories: Category[];
+    rationScaleItems: RationScaleItem[];
+    unitsOfMeasure: UnitOfMeasure[];
+    dishes: Dish[];
 }
 
-const getUomName = (uomId: string) => {
-    return unitsOfMeasure.find(u => u.id === uomId)?.name || '';
-}
 
-const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, sectionId: string, onItemChange: MenuDayProps['onItemChange'] }) => {
+const MealPlanRow = ({ item, sectionId, onItemChange, categories, rationScaleItems, unitsOfMeasure, dishes }: MealPlanRowProps) => {
+    const getIngredientInfo = (ingredientId: string | null) => {
+      if (!ingredientId) return null;
+      return rationScaleItems.find(i => i.id === ingredientId);
+    }
+
+    const getUomName = (uomId: string) => {
+        return unitsOfMeasure.find(u => u.id === uomId)?.name || '';
+    }
+    
     const ingredient = getIngredientInfo(item.ingredientId);
     const scale = ingredient?.quantity ?? '';
     const uom = ingredient ? getUomName(ingredient.unitOfMeasureId) : '';
   
-    const filteredIngredients = React.useMemo(() => {
+    const filteredIngredients = useMemo(() => {
+        if (!item.mealPlanCategoryId) return rationScaleItems;
         return rationScaleItems.filter(i => i.categoryId === item.mealPlanCategoryId);
-    }, [item.mealPlanCategoryId])
+    }, [item.mealPlanCategoryId, rationScaleItems])
 
     const handleIngredientChange = (ingredientId: string) => {
-        onItemChange(sectionId, item.id, { ingredientId: ingredientId });
+        const selectedIngredient = getIngredientInfo(ingredientId);
+        onItemChange(sectionId, item.id, { 
+            ingredientId: ingredientId,
+            // When ingredient changes, also update the dish to one that uses it if possible, or clear it
+            dishId: dishes.find(d => d.ingredients.some(i => i.ingredientId === ingredientId))?.id || null
+        });
     }
     
     const handleCategoryChange = (categoryId: string) => {
         // When category changes, clear the ingredient as it might not be valid anymore
-        onItemChange(sectionId, item.id, { mealPlanCategoryId: categoryId, ingredientId: null });
+        onItemChange(sectionId, item.id, { mealPlanCategoryId: categoryId, ingredientId: null, dishId: null });
     }
+    
+    const handleDishChange = (dishId: string) => {
+        onItemChange(sectionId, item.id, { dishId });
+    }
+    
+    const handleStrengthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        onItemChange(sectionId, item.id, { strength: Number(value) });
+    }
+
 
     return (
         <TableRow>
             <TableCell className="p-2">
-                 <Select value={item.mealPlanCategoryId} onValueChange={handleCategoryChange}>
+                 <Select value={item.mealPlanCategoryId || ''} onValueChange={handleCategoryChange}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select category..." />
                     </SelectTrigger>
@@ -77,7 +107,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
                 </Select>
             </TableCell>
             <TableCell className="p-2">
-                <Select value={item.ingredientId || ''} onValueChange={handleIngredientChange}>
+                <Select value={item.ingredientId || ''} onValueChange={handleIngredientChange} disabled={!item.mealPlanCategoryId}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select ingredient..." />
                     </SelectTrigger>
@@ -95,17 +125,19 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
                 <Input value={uom} readOnly className="bg-muted" />
             </TableCell>
              <TableCell className="p-2">
-                <Select>
+                <Select value={item.dishId || ''} onValueChange={handleDishChange}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select dish..." />
                     </SelectTrigger>
                     <SelectContent>
-                        {/* Dish options will go here */}
+                        {dishes.map(dish => (
+                            <SelectItem key={dish.id} value={dish.id}>{dish.name}</SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </TableCell>
             <TableCell className="p-2">
-                <Input defaultValue={item.strength} type="number" />
+                <Input defaultValue={item.strength} type="number" onChange={handleStrengthChange} />
             </TableCell>
             <TableCell className="text-right p-2">
                 <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -116,7 +148,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
     )
 }
 
-const MealSectionCard = ({ section, onItemChange }: { section: MealSection, onItemChange: MenuDayProps['onItemChange'] }) => {
+const MealSectionCard = ({ section, ...props }: { section: MealSection } & Omit<MenuDayProps, 'menu'>) => {
   return (
     <Card>
       <CardHeader>
@@ -147,7 +179,7 @@ const MealSectionCard = ({ section, onItemChange }: { section: MealSection, onIt
             </TableRow>
           </TableHeader>
           <TableBody>
-            {section.items.map((item) => <MealPlanRow key={item.id} item={item} sectionId={section.id} onItemChange={onItemChange} />)}
+            {section.items.map((item) => <MealPlanRow key={item.id} item={item} sectionId={section.id} {...props} />)}
              {section.items.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground py-4">
@@ -162,11 +194,12 @@ const MealSectionCard = ({ section, onItemChange }: { section: MealSection, onIt
   );
 };
 
-export const MenuDay = ({ menu, onItemChange }: MenuDayProps) => {
+export const MenuDay = ({ menu, onItemChange, categories, rationScaleItems, unitsOfMeasure, dishes }: MenuDayProps) => {
+  const componentProps = { onItemChange, categories, rationScaleItems, unitsOfMeasure, dishes };
   return (
     <div className="space-y-6">
       {menu.sections.map((section) => (
-        <MealSectionCard key={section.id} section={section} onItemChange={onItemChange} />
+        <MealSectionCard key={section.id} section={section} {...componentProps} />
       ))}
     </div>
   );

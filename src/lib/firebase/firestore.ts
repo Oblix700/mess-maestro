@@ -1,6 +1,7 @@
-import { collection, getDocs } from 'firebase/firestore';
+
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { firestore } from './client';
-import type { Category, UnitOfMeasure, Region, Supplier, Unit, Ingredient, Dish, Order } from '@/lib/types';
+import type { Category, UnitOfMeasure, Region, Supplier, Unit, Ingredient, Dish, Order, MenuDefinition, RationScaleItem } from '@/lib/types';
 
 /**
  * Fetches all categories from the Firestore database.
@@ -104,6 +105,23 @@ export async function getIngredients(): Promise<Ingredient[]> {
 }
 
 /**
+ * Fetches all ration scale items from the Firestore database.
+ * @returns A promise that resolves to an array of RationScaleItems.
+ */
+export async function getRationScale(): Promise<RationScaleItem[]> {
+    try {
+        const rationScaleCollection = collection(firestore, 'rationScaleItems');
+        const querySnapshot = await getDocs(rationScaleCollection);
+        const rationScaleData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RationScaleItem));
+        return rationScaleData;
+    } catch (error) {
+        console.error("Error fetching ration scale items: ", error);
+        return [];
+    }
+}
+
+
+/**
  * Fetches all dishes from the Firestore database.
  * @returns A promise that resolves to an array of Dishes.
  */
@@ -135,4 +153,24 @@ export async function getOrders(): Promise<Order[]> {
         console.error("Error fetching orders: ", error);
         return [];
     }
+}
+
+/**
+ * Fetches a specific menu cycle definition from Firestore.
+ * @param day The day of the cycle to fetch (1-28).
+ * @returns A promise that resolves to the menu definition or null if not found.
+ */
+export async function getMenuCycle(day: number): Promise<MenuDefinition | null> {
+  try {
+    const menuDocRef = doc(firestore, 'menuCycle', String(day));
+    const docSnap = await getDoc(menuDocRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as MenuDefinition;
+    }
+    console.warn(`No menu document found for day: ${day}`);
+    return null;
+  } catch (error) {
+    console.error(`Error fetching menu for day ${day}:`, error);
+    throw error;
+  }
 }
