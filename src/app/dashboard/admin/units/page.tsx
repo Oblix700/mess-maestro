@@ -228,7 +228,6 @@ export default function UnitsPage() {
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
-                  <TableHead>ID</TableHead>
                   <TableHead>Unit Name</TableHead>
                   <TableHead>Mess</TableHead>
                   <TableHead>Regions</TableHead>
@@ -240,11 +239,10 @@ export default function UnitsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : units.map((unit) => (
                   <TableRow key={unit.id}>
-                    <TableCell className="font-mono text-xs">{unit.id}</TableCell>
                     <TableCell className="font-medium">{unit.name}</TableCell>
                     <TableCell>{unit.mess}</TableCell>
                     <TableCell>
@@ -293,7 +291,7 @@ export default function UnitsPage() {
           <DialogHeader>
             <DialogTitle>{selectedUnit?.id ? 'Edit Unit' : 'Add Unit'}</DialogTitle>
             <DialogDescription>
-              {selectedUnit?.id ? 'Make changes to the unit. Click save when you\'re done.' : 'Add a new unit to the database.'}
+              {selectedUnit?.id ? 'Make changes to the unit. Click save when you\\'re done.' : 'Add a new unit to the database.'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
