@@ -1,6 +1,6 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { firestore } from './client';
-import type { Category, UnitOfMeasure, Region } from '@/lib/types';
+import type { Category, UnitOfMeasure, Region, Supplier } from '@/lib/types';
 
 /**
  * Fetches all categories from the Firestore database.
@@ -54,3 +54,19 @@ export async function getRegions(): Promise<Region[]> {
       return [];
     }
   }
+
+/**
+ * Fetches all suppliers from the Firestore database.
+ * @returns A promise that resolves to an array of Suppliers.
+ */
+export async function getSuppliers(): Promise<Supplier[]> {
+    try {
+        const suppliersCollection = collection(firestore, 'suppliers');
+        const querySnapshot = await getDocs(suppliersCollection);
+        const suppliersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
+        return suppliersData;
+    } catch (error) {
+        console.error("Error fetching suppliers: ", error);
+        return [];
+    }
+}
