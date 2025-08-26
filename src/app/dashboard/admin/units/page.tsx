@@ -51,6 +51,8 @@ import { firestore } from '@/lib/firebase/client';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { getSuppliers, getUnits } from '@/lib/firebase/firestore';
+
 
 export default function UnitsPage() {
   const [units, setUnits] = useState<Unit[]>([]);
@@ -65,22 +67,12 @@ export default function UnitsPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const unitsCollection = collection(firestore, 'units');
-        const suppliersCollection = collection(firestore, 'suppliers');
-
-        const [unitsSnapshot, suppliersSnapshot] = await Promise.all([
-            getDocs(unitsCollection),
-            getDocs(suppliersCollection)
+        const [unitsData, suppliersData] = await Promise.all([
+          getUnits(),
+          getSuppliers(),
         ]);
-
-        const unitsData = unitsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
-        const suppliersData = suppliersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
         
-        unitsData.sort((a, b) => {
-            const idA = parseInt(a.id || '0');
-            const idB = parseInt(b.id || '0');
-            return idA - idB;
-        });
+        unitsData.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
 
         setUnits(unitsData);
         setSuppliers(suppliersData);
@@ -135,13 +127,7 @@ export default function UnitsPage() {
             const { id, ...unitData } = selectedUnit;
             await updateDoc(unitDocRef, unitData);
             const updatedUnits = units.map((u) => (u.id === selectedUnit.id ? selectedUnit : u));
-            updatedUnits.sort((a, b) => {
-                const nameA = a.name.toLowerCase();
-                const nameB = b.name.toLowerCase();
-                if (nameA < nameB) return -1;
-                if (nameA > nameB) return 1;
-                return 0;
-            });
+            updatedUnits.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
             setUnits(updatedUnits);
             toast({ title: "Success", description: "Unit updated successfully." });
         } else {
@@ -149,13 +135,7 @@ export default function UnitsPage() {
             const docRef = await addDoc(collection(firestore, 'units'), newUnitData);
             const finalNewUnit = { id: docRef.id, ...newUnitData };
             const updatedUnits = [...units, finalNewUnit];
-            updatedUnits.sort((a, b) => {
-                const nameA = a.name.toLowerCase();
-                const nameB = b.name.toLowerCase();
-                if (nameA < nameB) return -1;
-                if (nameA > nameB) return 1;
-                return 0;
-            });
+            updatedUnits.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
             setUnits(updatedUnits);
             toast({ title: "Success", description: "Unit added successfully." });
         }
@@ -410,5 +390,3 @@ export default function UnitsPage() {
     </>
   );
 }
-
-    

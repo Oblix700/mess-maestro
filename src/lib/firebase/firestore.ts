@@ -1,6 +1,6 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { firestore } from './client';
-import type { Category, UnitOfMeasure, Region, Supplier } from '@/lib/types';
+import type { Category, UnitOfMeasure, Region, Supplier, Unit } from '@/lib/types';
 
 /**
  * Fetches all categories from the Firestore database.
@@ -67,6 +67,22 @@ export async function getSuppliers(): Promise<Supplier[]> {
         return suppliersData;
     } catch (error) {
         console.error("Error fetching suppliers: ", error);
+        return [];
+    }
+}
+
+/**
+ * Fetches all units from the Firestore database.
+ * @returns A promise that resolves to an array of Units.
+ */
+export async function getUnits(): Promise<Unit[]> {
+    try {
+        const unitsCollection = collection(firestore, 'units');
+        const querySnapshot = await getDocs(unitsCollection);
+        const unitsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
+        return unitsData;
+    } catch (error) {
+        console.error("Error fetching units: ", error);
         return [];
     }
 }
