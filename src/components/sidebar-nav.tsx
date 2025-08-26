@@ -73,6 +73,9 @@ const menuItems = [
     href: "/dashboard/warehousing",
     label: "Warehousing",
     icon: Warehouse,
+    subItems: [
+        { href: "/dashboard/warehousing/stock-levels", label: "Stock Levels", icon: List },
+    ]
   },
   {
     href: "/dashboard/reports",
