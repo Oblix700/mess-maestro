@@ -55,9 +55,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { firestore } from '@/lib/firebase/client';
-import { collection, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { getCategories, getIngredients, getUoms } from '@/lib/firebase/firestore';
 
 export default function IngredientsPage() {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -79,15 +78,11 @@ export default function IngredientsPage() {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [ingredientsSnap, categoriesSnap, uomSnap] = await Promise.all([
-                getDocs(collection(firestore, 'ingredients')),
-                getDocs(collection(firestore, 'categories')),
-                getDocs(collection(firestore, 'unitsOfMeasure')),
+            const [ingredientsData, categoriesData, uomData] = await Promise.all([
+                getIngredients(),
+                getCategories(),
+                getUoms(),
             ]);
-
-            const ingredientsData = ingredientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
-            const categoriesData = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
-            const uomData = uomSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnitOfMeasure));
 
             setIngredients(ingredientsData);
             setCategories(categoriesData);
