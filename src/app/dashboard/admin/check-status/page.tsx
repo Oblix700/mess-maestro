@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, XCircle, Loader2, Database } from 'lucide-react';
 import { firestore } from '@/lib/firebase/client';
 import { collection, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
-import { units, categories, unitsOfMeasure, suppliers, ingredients } from '@/lib/data';
+import { units, categories, unitsOfMeasure, suppliers, ingredients, dishes } from '@/lib/data';
 
 
 export default function CheckStatusPage() {
@@ -106,6 +106,13 @@ export default function CheckStatusPage() {
         ingredients.forEach(ingredient => {
             const docRef = doc(ingredientsCollection, ingredient.id);
             batch.set(docRef, ingredient);
+        });
+
+        // Seed Dishes
+        const dishesCollection = collection(firestore, 'dishes');
+        dishes.forEach(dish => {
+            const docRef = doc(dishesCollection, dish.id);
+            batch.set(docRef, dish);
         });
 
         await batch.commit();

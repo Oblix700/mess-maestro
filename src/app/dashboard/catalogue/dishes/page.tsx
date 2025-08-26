@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -22,10 +23,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
-import { dishes } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
+import { getDishes } from "@/lib/firebase/firestore";
 
-export default function DishesPage() {
+// TODO: Actions are disabled for now. Will be implemented in a client component.
+
+export default async function DishesPage() {
+  const dishes = await getDishes();
+
   return (
     <Card>
       <CardHeader>
@@ -36,7 +41,7 @@ export default function DishesPage() {
                     Manage your dishes and their variants.
                 </CardDescription>
             </div>
-            <Button size="sm" className="gap-1">
+            <Button size="sm" className="gap-1" disabled>
                 <PlusCircle className="h-4 w-4" />
                 Add Dish
             </Button>
@@ -61,7 +66,7 @@ export default function DishesPage() {
                 <TableCell>{dish.description}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {dish.variants.length > 0 ? (
+                    {dish.variants && dish.variants.length > 0 ? (
                       dish.variants.map((variant) => (
                         <Badge key={variant} variant="secondary">
                           {variant}
@@ -75,7 +80,7 @@ export default function DishesPage() {
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
+                      <Button aria-haspopup="true" size="icon" variant="ghost" disabled>
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Toggle menu</span>
                       </Button>
