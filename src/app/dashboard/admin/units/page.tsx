@@ -123,7 +123,7 @@ export default function UnitsPage() {
   };
 
   const handleAddClick = () => {
-    setSelectedUnit({ name: '', mess: '', supplierAccounts: [] });
+    setSelectedUnit({ id: '', name: '', mess: '', supplierAccounts: [] });
     setIsEditDialogOpen(true);
   }
 
@@ -202,7 +202,8 @@ export default function UnitsPage() {
   };
 
   const getSupplierName = (supplierId: string) => {
-    return suppliers.find(s => s.id === supplierId)?.name || 'Unknown Supplier';
+    const supplier = suppliers.find(s => s.id === supplierId);
+    return supplier ? `${supplier.name} (${supplier.regions.join(', ')})` : 'Unknown Supplier';
   };
 
   return (
@@ -227,9 +228,10 @@ export default function UnitsPage() {
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
+                  <TableHead>ID</TableHead>
                   <TableHead>Unit Name</TableHead>
                   <TableHead>Mess</TableHead>
-                  <TableHead>Supplier Accounts</TableHead>
+                  <TableHead>Regions</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -238,23 +240,22 @@ export default function UnitsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={5} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : units.map((unit) => (
                   <TableRow key={unit.id}>
+                    <TableCell className="font-mono text-xs">{unit.id}</TableCell>
                     <TableCell className="font-medium">{unit.name}</TableCell>
                     <TableCell>{unit.mess}</TableCell>
                     <TableCell>
-                      {unit.supplierAccounts && unit.supplierAccounts.length > 0 ? (
-                          <div className="flex flex-col gap-1">
-                              {unit.supplierAccounts.map((acc, index) => (
-                                  <Badge key={index} variant="secondary" className="font-normal">
-                                      {getSupplierName(acc.supplierId)}: {acc.accountNumber}
-                                  </Badge>
-                              ))}
-                          </div>
+                      {unit.regions && unit.regions.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {unit.regions.map((region, index) => (
+                            <Badge key={index} variant="outline">{region}</Badge>
+                          ))}
+                        </div>
                       ) : (
-                          <span className="text-muted-foreground text-sm">No accounts</span>
+                        <span className="text-muted-foreground text-sm">No regions</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -329,7 +330,7 @@ export default function UnitsPage() {
                         </SelectTrigger>
                         <SelectContent>
                             {suppliers.map(s => (
-                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                <SelectItem key={s.id} value={s.id}>{getSupplierName(s.id)}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>

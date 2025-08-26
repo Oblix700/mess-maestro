@@ -1,6 +1,9 @@
+
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,8 +15,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email === "francois.marsau@gmail.com" && password === "85342939PE") {
+      router.push("/dashboard");
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Invalid email or password. Please try again.",
+      });
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="mx-auto w-full max-w-sm">
@@ -23,11 +45,11 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl text-center">Mess Maestro</CardTitle>
           <CardDescription className="text-center">
-            Enter your email below to login to your account
+            Enter your credentials below to login.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
+          <form onSubmit={handleLogin} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -35,6 +57,8 @@ export default function LoginPage() {
                 type="email"
                 placeholder="m@example.com"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
@@ -47,12 +71,18 @@ export default function LoginPage() {
                   Forgot your password?
                 </Link>
               </div>
-              <Input id="password" type="password" required />
+              <Input 
+                id="password" 
+                type="password" 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
-            <Button type="submit" className="w-full" asChild>
-              <Link href="/dashboard">Login</Link>
+            <Button type="submit" className="w-full">
+              Login
             </Button>
-          </div>
+          </form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
             <Link href="#" className="underline">

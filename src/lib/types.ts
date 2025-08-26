@@ -16,6 +16,7 @@ export interface Unit {
   id?: string; // Optional because Firestore will generate it
   name: string;
   mess: string;
+  regions?: string[];
   supplierAccounts?: { supplierId: string; accountNumber: string }[];
 }
 
@@ -92,6 +93,7 @@ export interface User {
 
 export interface Supplier {
     id: string;
+    kitchenId?: string;
     name: string;
     contactPerson: string;
     phone: string;
