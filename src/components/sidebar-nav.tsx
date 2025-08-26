@@ -47,7 +47,6 @@ const menuItems = [
     label: "Catalogue",
     icon: BookCopy,
     subItems: [
-      { href: "/dashboard/catalogue/categories", label: "Categories", icon: Package },
       { href: "/dashboard/catalogue/ingredients", label: "Ingredients", icon: Soup },
       { href: "/dashboard/catalogue/dishes", label: "Dishes", icon: ChefHat },
       { href: "/dashboard/catalogue/suppliers", label: "Suppliers", icon: Truck },
@@ -76,6 +75,7 @@ const menuItems = [
         { href: "/dashboard/admin/users", label: "Users", icon: Users },
         { href: "/dashboard/admin/units", label: "Units", icon: Building },
         { href: "/dashboard/admin/region", label: "Region", icon: Globe },
+        { href: "/dashboard/admin/categories", label: "Categories", icon: Package },
         { href: "/dashboard/admin/uom", label: "UOM", icon: Scaling },
         { href: "/dashboard/admin/ration-scale", label: "Ration Scale", icon: Calculator },
         { href: "/dashboard/admin/check-status", label: "Check Status", icon: HeartPulse },
