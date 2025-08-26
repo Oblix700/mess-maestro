@@ -39,7 +39,7 @@ export default function OrdersPage() {
             </CardDescription>
           </div>
           <Button size="sm" className="gap-1" asChild>
-            <Link href="/dashboard/orders/new">
+            <Link href="/dashboard/purchasing/orders/new">
                 <PlusCircle className="h-4 w-4" />
                 Create New Order
             </Link>

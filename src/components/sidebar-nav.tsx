@@ -20,6 +20,9 @@ import {
   HeartPulse,
   Users,
   Globe,
+  ShoppingCart,
+  Warehouse,
+  List,
 } from "lucide-react";
 import {
   Collapsible,
@@ -49,7 +52,6 @@ const menuItems = [
     subItems: [
       { href: "/dashboard/catalogue/ingredients", label: "Ingredients", icon: Soup },
       { href: "/dashboard/catalogue/dishes", label: "Dishes", icon: ChefHat },
-      { href: "/dashboard/catalogue/suppliers", label: "Suppliers", icon: Truck },
     ],
   },
   {
@@ -58,9 +60,19 @@ const menuItems = [
     icon: ChefHat,
   },
   {
-    href: "/dashboard/orders",
-    label: "Orders",
-    icon: ClipboardList,
+    href: "/dashboard/purchasing",
+    label: "Purchasing",
+    icon: ShoppingCart,
+    subItems: [
+        { href: "/dashboard/purchasing/shopping-list", label: "Shopping List", icon: List },
+        { href: "/dashboard/purchasing/orders", label: "Orders", icon: ClipboardList },
+        { href: "/dashboard/purchasing/suppliers", label: "Suppliers", icon: Truck },
+    ]
+  },
+  {
+    href: "/dashboard/warehousing",
+    label: "Warehousing",
+    icon: Warehouse,
   },
   {
     href: "/dashboard/reports",
