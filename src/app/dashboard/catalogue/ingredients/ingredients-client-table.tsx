@@ -278,8 +278,8 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
         <Table>
         <TableHeader className="sticky top-0 bg-card z-10">
             <TableRow>
-            <TableHead className="w-[25%]">Name</TableHead>
-            <TableHead className="w-[20%]">Category</TableHead>
+            <TableHead className="w-[30%]">Name</TableHead>
+            <TableHead className="w-[25%]">Category</TableHead>
             <TableHead>Packaging Options</TableHead>
             <TableHead>
                 <span className="sr-only">Actions</span>
