@@ -94,7 +94,7 @@ export default function IngredientsPage() {
 
   // Filters
   const [nameFilter, setNameFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
   const { toast } = useToast();
 
@@ -270,7 +270,7 @@ export default function IngredientsPage() {
     return ingredients.filter(ingredient => {
       const categoryName = getCategoryName(ingredient.categoryId).toLowerCase();
       const nameMatches = ingredient.name.toLowerCase().includes(nameFilter.toLowerCase());
-      const categoryMatches = categoryFilter === '' || categoryName.toLowerCase().includes(categoryFilter.toLowerCase());
+      const categoryMatches = categoryFilter === 'all' || categoryName.toLowerCase().includes(categoryFilter.toLowerCase());
       return nameMatches && categoryMatches;
     });
   }, [ingredients, nameFilter, categoryFilter, categories]);
@@ -304,7 +304,7 @@ export default function IngredientsPage() {
                 <SelectValue placeholder="Filter by category..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                 ))}
