@@ -64,7 +64,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
 
     return (
         <TableRow>
-            <TableCell className="w-[200px]">
+            <TableCell className="w-[250px] p-2">
                  <Select value={item.mealPlanCategoryId} onValueChange={handleCategoryChange}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select category..." />
@@ -76,7 +76,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
                     </SelectContent>
                 </Select>
             </TableCell>
-            <TableCell className="w-[250px]">
+            <TableCell className="w-[300px] p-2">
                 <Select value={item.ingredientId || ''} onValueChange={handleIngredientChange}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select ingredient..." />
@@ -88,13 +88,13 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
                     </SelectContent>
                 </Select>
             </TableCell>
-            <TableCell className="w-[100px]">
+            <TableCell className="w-[100px] p-2">
                 <Input value={scale} readOnly className="bg-muted" />
             </TableCell>
-            <TableCell className="w-[80px]">
+            <TableCell className="w-[80px] p-2">
                 <Input value={uom} readOnly className="bg-muted" />
             </TableCell>
-             <TableCell className="w-[200px]">
+             <TableCell className="w-[200px] p-2">
                 <Select>
                     <SelectTrigger>
                         <SelectValue placeholder="Select dish..." />
@@ -104,10 +104,10 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
                     </SelectContent>
                 </Select>
             </TableCell>
-            <TableCell className="w-[100px]">
+            <TableCell className="w-[100px] p-2">
                 <Input defaultValue={item.strength} type="number" />
             </TableCell>
-            <TableCell className="text-right">
+            <TableCell className="text-right p-2">
                 <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
                     <Trash2 className="h-4 w-4" />
                 </Button>
@@ -137,20 +137,20 @@ const MealSectionCard = ({ section, onItemChange }: { section: MealSection, onIt
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Meal Plan</TableHead>
-              <TableHead>Main Ingredient</TableHead>
-              <TableHead>Scale</TableHead>
-              <TableHead>UoM</TableHead>
-              <TableHead>Dish Name</TableHead>
-              <TableHead>Strength %</TableHead>
-              <TableHead><span className="sr-only">Actions</span></TableHead>
+              <TableHead className="p-2">Meal Plan</TableHead>
+              <TableHead className="p-2">Main Ingredient</TableHead>
+              <TableHead className="p-2">Scale</TableHead>
+              <TableHead className="p-2">UoM</TableHead>
+              <TableHead className="p-2">Dish Name</TableHead>
+              <TableHead className="p-2">Strength %</TableHead>
+              <TableHead className="p-2"><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {section.items.map((item) => <MealPlanRow key={item.id} item={item} sectionId={section.id} onItemChange={onItemChange} />)}
              {section.items.length === 0 && (
                 <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-4">
                         No items added to this section.
                     </TableCell>
                 </TableRow>

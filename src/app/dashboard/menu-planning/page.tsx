@@ -28,6 +28,7 @@ export default function MenuPlanningPage() {
   const [currentMenu, setCurrentMenu] = useState<MenuDefinition | null>(null);
 
   useEffect(() => {
+    // A real app would fetch this data for the selected kitchenId
     const menuData = menuCycle.find((menu) => menu.day === selectedDay);
     // Deep copy to prevent modifying the original placeholder data
     setCurrentMenu(menuData ? JSON.parse(JSON.stringify(menuData)) : null);
