@@ -30,6 +30,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import type { RationScaleItem, Ingredient, Category, UnitOfMeasure } from '@/lib/types';
 import { firestore } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getCategories, getIngredients, getUoms } from '@/lib/firebase/firestore';
 
 export default function RationScalePage() {
   const [items, setItems] = useState<RationScaleItem[]>([]);
@@ -46,48 +47,31 @@ export default function RationScalePage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
+        // For this page, we primarily need the ration scale.
+        // Other data is for populating dropdowns or displaying names.
         const [rationScaleSnap, ingredientsSnap, categoriesSnap, uomSnap] = await Promise.all([
-          getDocs(collection(firestore, 'rationScaleItems')), // Assuming 'rationScaleItems' is the collection name
-          getDocs(collection(firestore, 'ingredients')),
-          getDocs(collection(firestore, 'categories')),
-          getDocs(collection(firestore, 'unitsOfMeasure')),
+          getDocs(collection(firestore, 'rationScaleItems')),
+          getIngredients(),
+          getCategories(),
+          getUoms(),
         ]);
 
         const rationScaleData = rationScaleSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as RationScaleItem));
-        const ingredientsData = ingredientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
-        const categoriesData = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
-        const uomData = uomSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnitOfMeasure));
-
-        // Note: For now, we assume rationScaleItems are derived from ingredients.
-        // This logic might need adjustment based on the actual data model for ration scales.
-        // A more robust solution might involve a dedicated `rationScaleItems` collection.
-        // For now, we'll map ingredients to ration scale items.
-        const mappedRationScaleItems = ingredientsData.map(ing => ({
-            id: ing.id,
-            kitchenId: ing.kitchenId,
-            name: ing.name,
-            categoryId: ing.categoryId,
-            quantity: 0, // Default quantity, should be fetched from rationScaleItems collection
-            unitOfMeasureId: ing.variants[0]?.unitOfMeasureId || '', // Default UOM
-            variants: ing.variants,
-        }));
+        const ingredientsData = ingredientsSnap;
+        const categoriesData = categoriesSnap;
+        const uomData = uomSnap;
         
-        // If rationScaleData is available, merge it with the mapped items
-        const finalItems = mappedRationScaleItems.map(item => {
-            const foundScale = rationScaleData.find(scale => scale.id === item.id);
-            return foundScale ? { ...item, ...foundScale } : item;
-        });
-
-        setItems(finalItems);
+        setItems(rationScaleData);
         setIngredients(ingredientsData);
         setCategories(categoriesData);
         setUnitsOfMeasure(uomData);
+
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to fetch data from the database.",
+          description: "Failed to fetch ration scale data from the database.",
         });
       } finally {
         setIsLoading(false);
@@ -97,8 +81,8 @@ export default function RationScalePage() {
   }, [toast]);
 
 
-  const getIngredientInfo = (ingredientId: string) => {
-    return ingredients.find(i => i.id === ingredientId) || { name: 'N/A', categoryId: '' };
+  const getIngredientName = (ingredientId: string) => {
+    return ingredients.find(i => i.id === ingredientId)?.name || 'N/A';
   };
 
   const getCategoryName = (categoryId: string) => {
@@ -123,9 +107,10 @@ export default function RationScalePage() {
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
-      const ingredientInfo = getIngredientInfo(item.id);
-      const categoryName = getCategoryName(ingredientInfo.categoryId).toLowerCase();
-      const nameMatches = ingredientInfo.name.toLowerCase().includes(nameFilter.toLowerCase());
+      const name = getIngredientName(item.id).toLowerCase();
+      const categoryName = getCategoryName(item.categoryId).toLowerCase();
+      
+      const nameMatches = name.includes(nameFilter.toLowerCase());
       const categoryMatches = categoryFilter === '' || categoryName.includes(categoryFilter.toLowerCase());
       return nameMatches && categoryMatches;
     });
@@ -171,42 +156,47 @@ export default function RationScalePage() {
             <TableBody>
                 {isLoading ? (
                     <TableRow>
-                        <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                        <TableCell colSpan={4} className="text-center">Loading ration scale...</TableCell>
                     </TableRow>
-                ) : filteredItems.map((item) => {
-                    const ingredientInfo = getIngredientInfo(item.id);
-                    return (
-                        <TableRow key={item.id}>
-                            <TableCell className="font-medium">{ingredientInfo.name}</TableCell>
-                            <TableCell>
-                            {getCategoryName(ingredientInfo.categoryId)}
-                            </TableCell>
-                            <TableCell>
-                                <Input 
-                                    type="text" // Change to text to handle comma replacement
-                                    inputMode="decimal" // Provides numeric keyboard on mobile
-                                    value={item.quantity} 
-                                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                                    className="w-full" 
-                                />
-                            </TableCell>
-                            <TableCell>
-                            <Select defaultValue={item.unitOfMeasureId} onValueChange={(value) => handleUomChange(item.id, value)}>
-                                <SelectTrigger>
-                                <SelectValue placeholder="Select UOM" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                {unitsOfMeasure.map((uom) => (
-                                    <SelectItem key={uom.id} value={uom.id}>
-                                    {uom.name}
-                                    </SelectItem>
-                                ))}
-                                </SelectContent>
-                            </Select>
-                            </TableCell>
-                        </TableRow>
-                    )
-                })}
+                ) : filteredItems.length > 0 ? (
+                  filteredItems.map((item) => (
+                      <TableRow key={item.id}>
+                          <TableCell className="font-medium">{getIngredientName(item.id)}</TableCell>
+                          <TableCell>
+                          {getCategoryName(item.categoryId)}
+                          </TableCell>
+                          <TableCell>
+                              <Input 
+                                  type="text" 
+                                  inputMode="decimal"
+                                  value={item.quantity} 
+                                  onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                                  className="w-full" 
+                              />
+                          </TableCell>
+                          <TableCell>
+                          <Select value={item.unitOfMeasureId} onValueChange={(value) => handleUomChange(item.id, value)}>
+                              <SelectTrigger>
+                              <SelectValue placeholder="Select UOM" />
+                              </SelectTrigger>
+                              <SelectContent>
+                              {unitsOfMeasure.map((uom) => (
+                                  <SelectItem key={uom.id} value={uom.id}>
+                                  {uom.name}
+                                  </SelectItem>
+                              ))}
+                              </SelectContent>
+                          </Select>
+                          </TableCell>
+                      </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      No ration scale items found.
+                    </TableCell>
+                  </TableRow>
+                )}
             </TableBody>
             </Table>
         </div>
