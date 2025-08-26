@@ -22,6 +22,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -43,7 +44,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MoreHorizontal, PlusCircle, X } from 'lucide-react';
-import type { Ingredient, Category, UnitOfMeasure } from '@/lib/types';
+import type { Ingredient, Category, UnitOfMeasure, IngredientVariant } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -57,21 +58,44 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { getCategories, getIngredients, getUoms } from '@/lib/firebase/firestore';
+import { firestore } from '@/lib/firebase/client';
+import { collection, doc, addDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+
+// Define a type for the new variant state
+type NewVariantState = {
+  packagingSize: string;
+  unitOfMeasureId: string;
+};
+
+// Define a type for the ingredient being edited/added
+type EditableIngredient = Omit<Ingredient, 'id'> & { id?: string };
+
 
 export default function IngredientsPage() {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [unitsOfMeasure, setUnitsOfMeasure] = useState<UnitOfMeasure[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Dialog states
+  const [isIngredientDialogOpen, setIsIngredientDialogOpen] = useState(false);
+  const [isAddVariantDialogOpen, setIsAddVariantDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{ingredientId: string, variantId: string} | null>(null);
+  const [isDeleteVariantDialogOpen, setIsDeleteVariantDialogOpen] = useState(false);
+  
+  // State for items to be actioned on
+  const [selectedIngredient, setSelectedIngredient] = useState<EditableIngredient | null>(null);
+  const [variantToDelete, setVariantToDelete] = useState<{ingredientId: string, variant: IngredientVariant} | null>(null);
+  const [ingredientToDelete, setIngredientToDelete] = useState<Ingredient | null>(null);
+  
+  // State for new variant form
+  const [newVariant, setNewVariant] = useState<NewVariantState>({ packagingSize: '', unitOfMeasureId: '' });
+
+  // Filters
   const [nameFilter, setNameFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
 
-  const [isAddVariantDialogOpen, setIsAddVariantDialogOpen] = useState(false);
-  const [selectedIngredientId, setSelectedIngredientId] = useState<string | null>(null);
-  const [newVariant, setNewVariant] = useState({ packagingSize: '', unitOfMeasureId: '' });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -101,74 +125,152 @@ export default function IngredientsPage() {
     fetchData();
   }, [toast]);
 
+  const getUomName = (uomId: string) => unitsOfMeasure.find((u) => u.id === uomId)?.name || 'N/A';
+  const getCategoryName = (categoryId: string) => categories.find((c) => c.id === categoryId)?.name || 'N/A';
 
-  const getUomName = (uomId: string) => {
-    return unitsOfMeasure.find((u) => u.id === uomId)?.name || 'N/A';
+  const handleOpenIngredientDialog = (ingredient: Ingredient | null) => {
+    if (ingredient) {
+      setSelectedIngredient(ingredient);
+    } else {
+      setSelectedIngredient({ kitchenId: 'all', name: '', categoryId: '', variants: [] });
+    }
+    setIsIngredientDialogOpen(true);
+  };
+
+  const handleSaveIngredient = async () => {
+    if (!selectedIngredient || !selectedIngredient.name || !selectedIngredient.categoryId) {
+      toast({ variant: 'destructive', title: 'Validation Error', description: 'Name and Category are required.' });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      if (selectedIngredient.id) {
+        // Update existing ingredient
+        const ingredientRef = doc(firestore, 'ingredients', selectedIngredient.id);
+        const { id, ...dataToUpdate } = selectedIngredient;
+        await updateDoc(ingredientRef, dataToUpdate);
+        setIngredients(ingredients.map(ing => ing.id === id ? { ...dataToUpdate, id } : ing));
+        toast({ title: 'Success', description: 'Ingredient updated successfully.' });
+      } else {
+        // Add new ingredient
+        const docRef = await addDoc(collection(firestore, 'ingredients'), selectedIngredient);
+        setIngredients([...ingredients, { id: docRef.id, ...selectedIngredient }]);
+        toast({ title: 'Success', description: 'Ingredient added successfully.' });
+      }
+      setIsIngredientDialogOpen(false);
+      setSelectedIngredient(null);
+    } catch (error) {
+      console.error('Error saving ingredient:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save ingredient.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const confirmDeleteIngredient = (ingredient: Ingredient) => {
+    setIngredientToDelete(ingredient);
+    setIsDeleteDialogOpen(true);
   }
 
-  const getCategoryName = (categoryId: string) => {
-    return categories.find((c) => c.id === categoryId)?.name || 'N/A';
+  const handleDeleteIngredient = async () => {
+    if (!ingredientToDelete) return;
+    setIsSubmitting(true);
+    try {
+      await deleteDoc(doc(firestore, 'ingredients', ingredientToDelete.id));
+      setIngredients(ingredients.filter(ing => ing.id !== ingredientToDelete.id));
+      toast({ title: 'Success', description: 'Ingredient deleted successfully.' });
+      setIsDeleteDialogOpen(false);
+      setIngredientToDelete(null);
+    } catch (error) {
+      console.error('Error deleting ingredient:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete ingredient.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  const handleOpenAddVariantDialog = (ingredientId: string) => {
-    setSelectedIngredientId(ingredientId);
+  const handleOpenAddVariantDialog = (ingredient: Ingredient) => {
+    setSelectedIngredient(ingredient);
     setNewVariant({ packagingSize: '', unitOfMeasureId: unitsOfMeasure[0]?.id || '' });
     setIsAddVariantDialogOpen(true);
   };
-  
-  const handleAddVariant = () => {
-    if (!selectedIngredientId || !newVariant.packagingSize || !newVariant.unitOfMeasureId) return;
 
-    // This is a local update for now. To make it persistent, you'd need a Firestore update call.
-    setIngredients(ingredients.map(ing => {
-      if (ing.id === selectedIngredientId) {
-        const newVariantToAdd = {
-          id: `v${Date.now()}`, // temporary unique ID
-          packagingSize: newVariant.packagingSize,
-          unitOfMeasureId: newVariant.unitOfMeasureId,
-          stock: 0,
-        };
-        return {
-          ...ing,
-          variants: [...ing.variants, newVariantToAdd],
-        };
-      }
-      return ing;
-    }));
+  const handleAddVariant = async () => {
+    if (!selectedIngredient?.id || !newVariant.packagingSize || !newVariant.unitOfMeasureId) {
+      toast({ variant: 'destructive', title: 'Validation Error', description: 'Packaging size and UOM are required.' });
+      return;
+    }
+    setIsSubmitting(true);
+    const ingredientRef = doc(firestore, 'ingredients', selectedIngredient.id);
+    const newVariantToAdd: IngredientVariant = {
+      id: `v${Date.now()}`,
+      packagingSize: newVariant.packagingSize,
+      unitOfMeasureId: newVariant.unitOfMeasureId,
+      stock: 0,
+    };
 
-    setIsAddVariantDialogOpen(false);
-    setSelectedIngredientId(null);
+    try {
+      await updateDoc(ingredientRef, {
+        variants: arrayUnion(newVariantToAdd)
+      });
+      setIngredients(ingredients.map(ing => 
+        ing.id === selectedIngredient.id 
+          ? { ...ing, variants: [...ing.variants, newVariantToAdd] } 
+          : ing
+      ));
+      toast({ title: 'Success', description: 'Packaging option added.' });
+      setIsAddVariantDialogOpen(false);
+      setSelectedIngredient(null);
+    } catch (error) {
+      console.error('Error adding variant:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to add packaging option.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-
-  const confirmDeleteVariant = (ingredientId: string, variantId: string) => {
-    setItemToDelete({ ingredientId, variantId });
-    setIsDeleteDialogOpen(true);
+  const confirmDeleteVariant = (ingredientId: string, variant: IngredientVariant) => {
+    setVariantToDelete({ ingredientId, variant });
+    setIsDeleteVariantDialogOpen(true);
   };
   
-  const handleDeleteVariant = () => {
-    if (!itemToDelete) return;
-    const { ingredientId, variantId } = itemToDelete;
+  const handleDeleteVariant = async () => {
+    if (!variantToDelete) return;
+    const { ingredientId, variant } = variantToDelete;
+    setIsSubmitting(true);
+    const ingredientRef = doc(firestore, 'ingredients', ingredientId);
+    
+    try {
+      await updateDoc(ingredientRef, {
+        variants: arrayRemove(variant)
+      });
+      setIngredients(ingredients.map(ing => 
+        ing.id === ingredientId 
+          ? { ...ing, variants: ing.variants.filter(v => v.id !== variant.id) } 
+          : ing
+      ));
+      toast({ title: 'Success', description: 'Packaging option removed.' });
+      setIsDeleteVariantDialogOpen(false);
+      setVariantToDelete(null);
+    } catch (error) {
+      console.error('Error deleting variant:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove packaging option.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    // This is a local update for now. To make it persistent, you'd need a Firestore update call.
-    setIngredients(ingredients.map(ing => {
-      if (ing.id === ingredientId) {
-        return {
-          ...ing,
-          variants: ing.variants.filter(v => v.id !== variantId),
-        };
-      }
-      return ing;
-    }));
-    setIsDeleteDialogOpen(false);
-    setItemToDelete(null);
+  const handleFieldChange = (field: keyof EditableIngredient, value: string) => {
+    if (selectedIngredient) {
+      setSelectedIngredient({ ...selectedIngredient, [field]: value });
+    }
   };
 
   const filteredIngredients = useMemo(() => {
     return ingredients.filter(ingredient => {
       const categoryName = getCategoryName(ingredient.categoryId).toLowerCase();
       const nameMatches = ingredient.name.toLowerCase().includes(nameFilter.toLowerCase());
-      const categoryMatches = categoryName.includes(categoryFilter.toLowerCase());
+      const categoryMatches = categoryFilter === '' || categoryName.toLowerCase().includes(categoryFilter.toLowerCase());
       return nameMatches && categoryMatches;
     });
   }, [ingredients, nameFilter, categoryFilter, categories]);
@@ -185,7 +287,7 @@ export default function IngredientsPage() {
               Manage your ingredients and their packaging sizes.
             </CardDescription>
           </div>
-          <Button size="sm" className="gap-1">
+          <Button size="sm" className="gap-1" onClick={() => handleOpenIngredientDialog(null)}>
             <PlusCircle className="h-4 w-4" />
             Add Ingredient
           </Button>
@@ -197,16 +299,21 @@ export default function IngredientsPage() {
               onChange={(e) => setNameFilter(e.target.value)}
               className="max-w-sm"
             />
-            <Input
-              placeholder="Filter by category..."
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="max-w-sm"
-            />
+             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="max-w-sm">
+                <SelectValue placeholder="Filter by category..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Categories</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
       </CardHeader>
       <CardContent>
-        <div className="relative h-[calc(100vh-16rem)] overflow-auto border rounded-md">
+        <div className="relative h-[calc(100vh-18rem)] overflow-auto border rounded-md">
             <Table>
             <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
@@ -236,7 +343,7 @@ export default function IngredientsPage() {
                                     <Badge key={variant.id} variant="secondary" className="group pl-3 pr-1 py-1 text-sm">
                                         <span>{variant.packagingSize}{getUomName(variant.unitOfMeasureId)}</span>
                                         <button 
-                                        onClick={() => confirmDeleteVariant(ingredient.id, variant.id)}
+                                        onClick={() => confirmDeleteVariant(ingredient.id, variant)}
                                         className="ml-1 rounded-full opacity-50 hover:opacity-100 hover:bg-destructive/20 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-destructive"
                                         >
                                         <X className="h-3 w-3" />
@@ -247,7 +354,7 @@ export default function IngredientsPage() {
                             ) : (
                                 <span className="text-muted-foreground text-sm">No options</span>
                             )}
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenAddVariantDialog(ingredient.id)}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenAddVariantDialog(ingredient)}>
                                 <PlusCircle className="h-4 w-4" />
                                 <span className="sr-only">Add size</span>
                             </Button>
@@ -264,19 +371,63 @@ export default function IngredientsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem>Delete</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenIngredientDialog(ingredient)}>Edit</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive" onClick={() => confirmDeleteIngredient(ingredient)}>Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                           </DropdownMenu>
                       </div>
                     </TableCell>
                 </TableRow>
                 ))}
+                 {!isLoading && filteredIngredients.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            No ingredients found for the current filters.
+                        </TableCell>
+                    </TableRow>
+                )}
             </TableBody>
             </Table>
         </div>
       </CardContent>
     </Card>
+
+    {/* Add/Edit Ingredient Dialog */}
+    <Dialog open={isIngredientDialogOpen} onOpenChange={setIsIngredientDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{selectedIngredient?.id ? 'Edit Ingredient' : 'Add Ingredient'}</DialogTitle>
+          <DialogDescription>
+            {selectedIngredient?.id ? 'Update the details for this ingredient.' : 'Create a new ingredient for the catalogue.'}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="name" className="text-right">Name</Label>
+            <Input id="name" value={selectedIngredient?.name || ''} onChange={(e) => handleFieldChange('name', e.target.value)} className="col-span-3" />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="category" className="text-right">Category</Label>
+            <Select value={selectedIngredient?.categoryId || ''} onValueChange={(value) => handleFieldChange('categoryId', value)}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsIngredientDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+          <Button onClick={handleSaveIngredient} disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : 'Save Ingredient'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
 
     {/* Add Variant Dialog */}
     <Dialog open={isAddVariantDialogOpen} onOpenChange={setIsAddVariantDialogOpen}>
@@ -284,7 +435,7 @@ export default function IngredientsPage() {
           <DialogHeader>
             <DialogTitle>Add Packaging Option</DialogTitle>
             <DialogDescription>
-              Enter the size and unit of measure for the new packaging option.
+              Enter the size and unit of measure for the new packaging option for <span className="font-semibold">{selectedIngredient?.name}</span>.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -322,16 +473,34 @@ export default function IngredientsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddVariantDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsAddVariantDialogOpen(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button onClick={handleAddVariant}>Save Option</Button>
+            <Button onClick={handleAddVariant} disabled={isSubmitting}>{isSubmitting ? 'Adding...' : 'Add Option'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-
+    {/* Delete Ingredient Confirmation */}
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the ingredient <span className="font-semibold">{ingredientToDelete?.name}</span> and all its variants.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setIngredientToDelete(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDeleteIngredient} className="bg-destructive hover:bg-destructive/90" disabled={isSubmitting}>
+            {isSubmitting ? 'Deleting...' : 'Delete'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Delete Variant Confirmation */}
+    <AlertDialog open={isDeleteVariantDialogOpen} onOpenChange={setIsDeleteVariantDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -340,12 +509,13 @@ export default function IngredientsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setVariantToDelete(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteVariant}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isSubmitting}
             >
-              Delete
+              {isSubmitting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
