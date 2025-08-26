@@ -33,7 +33,7 @@ import type { UnitOfMeasure } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { firestore } from '@/lib/firebase/client';
-import { collection, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 interface UomClientTableProps {
@@ -70,7 +70,9 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
     }
     setIsLoading(true);
 
-    if (selectedUom.id) {
+    const isEditing = uoms.some(u => u.id === selectedUom.id);
+
+    if (isEditing) {
         // Update existing UOM
         try {
             const uomDocRef = doc(firestore, 'unitsOfMeasure', selectedUom.id);
@@ -85,9 +87,13 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
     } else {
         // Add new UOM
         try {
+            const newUomId = selectedUom.name.toLowerCase().replace(/\s+/g, '-');
             const { id, ...newUomData } = selectedUom;
-            const docRef = await addDoc(collection(firestore, 'unitsOfMeasure'), { ...newUomData, id: newUomData.name.toLowerCase() });
-            setUoms([...uoms, { ...newUomData, id: docRef.id, name: newUomData.name }]);
+            
+            const uomDocRef = doc(firestore, 'unitsOfMeasure', newUomId);
+            await setDoc(uomDocRef, newUomData);
+            
+            setUoms([...uoms, { ...newUomData, id: newUomId }]);
             toast({ title: "Success", description: "UOM added successfully." });
         } catch (error) {
             console.error("Error adding UOM: ", error);
@@ -118,7 +124,11 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
 
   const handleFieldChange = (field: keyof Omit<UnitOfMeasure, 'id'>, value: string) => {
     if (selectedUom) {
-      setSelectedUom({ ...selectedUom, [field]: value });
+      const newUom = { ...selectedUom, [field]: value };
+      if (field === 'name' && !selectedUom.id) {
+        newUom.id = value.toLowerCase().replace(/\s+/g, '-');
+      }
+      setSelectedUom(newUom);
     }
   };
 
@@ -181,9 +191,9 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{selectedUom?.id ? 'Edit UOM' : 'Add UOM'}</DialogTitle>
+            <DialogTitle>{uoms.some(u => u.id === selectedUom?.id) ? 'Edit UOM' : 'Add UOM'}</DialogTitle>
             <DialogDescription>
-              {selectedUom?.id ? "Make changes to the unit of measure." : 'Add a new unit of measure to the list.'}
+              {uoms.some(u => u.id === selectedUom?.id) ? "Make changes to the unit of measure." : 'Add a new unit of measure to the list.'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -196,6 +206,7 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
                 value={selectedUom?.name || ''}
                 onChange={(e) => handleFieldChange('name', e.target.value)}
                 className="col-span-3"
+                disabled={uoms.some(u => u.id === selectedUom?.id)}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
