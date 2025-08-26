@@ -24,6 +24,7 @@ import type { Ingredient, UnitOfMeasure, IngredientVariant } from '@/lib/types';
 import { firestore } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface StockItem extends IngredientVariant {
   ingredientName: string;
@@ -32,6 +33,8 @@ interface StockItem extends IngredientVariant {
   received: number;
   issued: number;
   currentLevel: number;
+  stocktake: number;
+  discrepancy: number;
 }
 
 export default function StockLevelsPage() {
@@ -53,15 +56,20 @@ export default function StockLevelsPage() {
         const uomData = uomSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnitOfMeasure));
 
         const flattenedStockItems: StockItem[] = ingredientsData.flatMap(ingredient =>
-          ingredient.variants.map(variant => ({
-            ...variant,
-            ingredientName: ingredient.name,
-            ingredientId: ingredient.id,
-            openingStock: variant.stock, // Assuming initial stock is opening stock
-            received: 0, // Placeholder
-            issued: 0, // Placeholder
-            currentLevel: variant.stock, // Placeholder
-          }))
+          ingredient.variants.map(variant => {
+            const currentLevel = variant.stock; // Initially, current level is the stock from DB
+            return {
+              ...variant,
+              ingredientName: ingredient.name,
+              ingredientId: ingredient.id,
+              openingStock: variant.stock, 
+              received: 0, 
+              issued: 0, 
+              currentLevel: currentLevel,
+              stocktake: currentLevel, // Default stocktake to current level
+              discrepancy: 0, // Initially no discrepancy
+            };
+          })
         );
 
         setStockItems(flattenedStockItems);
@@ -86,11 +94,18 @@ export default function StockLevelsPage() {
   };
 
   const handleStocktakeChange = (itemId: string, value: string) => {
-    const newStockItems = stockItems.map(item =>
-      item.id === itemId
-        ? { ...item, stock: Number(value), currentLevel: Number(value) } // Update stock and current level for now
-        : item
-    );
+    const stocktakeValue = Number(value);
+    const newStockItems = stockItems.map(item => {
+      if (item.id === itemId) {
+        const discrepancy = stocktakeValue - item.currentLevel;
+        return { 
+          ...item, 
+          stocktake: stocktakeValue,
+          discrepancy: discrepancy,
+        };
+      }
+      return item;
+    });
     setStockItems(newStockItems);
   };
 
@@ -116,17 +131,19 @@ export default function StockLevelsPage() {
             <TableHeader className="sticky top-0 bg-card z-10">
               <TableRow>
                 <TableHead className="w-[30%]">Ingredient & Packaging</TableHead>
-                <TableHead>Opening Stock</TableHead>
+                <TableHead>Opening</TableHead>
                 <TableHead>Received</TableHead>
                 <TableHead>Issued</TableHead>
-                <TableHead>Current Level</TableHead>
+                <TableHead>Current</TableHead>
                 <TableHead className="w-[120px]">Stocktake</TableHead>
+                <TableHead>Discrepancy</TableHead>
+                <TableHead>Correction</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">Loading stock levels...</TableCell>
+                  <TableCell colSpan={8} className="text-center">Loading stock levels...</TableCell>
                 </TableRow>
               ) : (
                 stockItems.map(item => (
@@ -141,17 +158,28 @@ export default function StockLevelsPage() {
                     <TableCell>
                       <Input
                         type="number"
-                        defaultValue={item.stock}
+                        defaultValue={item.stocktake}
                         onBlur={(e) => handleStocktakeChange(item.id, e.target.value)}
                         className="w-full"
                       />
+                    </TableCell>
+                    <TableCell 
+                      className={cn(
+                        item.discrepancy < 0 && "text-destructive",
+                        item.discrepancy > 0 && "text-green-600"
+                      )}
+                    >
+                      {item.discrepancy}
+                    </TableCell>
+                    <TableCell>
+                      {item.stocktake}
                     </TableCell>
                   </TableRow>
                 ))
               )}
                {!isLoading && stockItems.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No ingredients found. Add ingredients in the Catalogue to manage stock.
                   </TableCell>
                 </TableRow>
