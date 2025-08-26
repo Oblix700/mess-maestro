@@ -77,7 +77,11 @@ export default function UnitsPage() {
         const suppliersData = suppliersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
         
         // Sort units by ID numerically
-        unitsData.sort((a, b) => parseInt(a.id!) - parseInt(b.id!));
+        unitsData.sort((a, b) => {
+            const idA = parseInt(a.id || '0');
+            const idB = parseInt(b.id || '0');
+            return idA - idB;
+        });
 
         setUnits(unitsData);
         setSuppliers(suppliersData);
@@ -120,8 +124,17 @@ export default function UnitsPage() {
   const handleSaveUnit = async () => {
     if (!selectedUnit) return;
 
-    if (selectedUnit.id) {
-        try {
+    // A unit must have a name
+    if (!selectedUnit.name || !selectedUnit.mess) {
+        toast({ variant: "destructive", title: "Validation Error", description: "Unit Name and Mess are required." });
+        return;
+    }
+
+    setIsLoading(true);
+
+    try {
+        if (selectedUnit.id) {
+            // Editing existing unit
             const unitDocRef = doc(firestore, 'units', selectedUnit.id);
             const { id, ...unitData } = selectedUnit;
             await updateDoc(unitDocRef, unitData);
@@ -129,30 +142,29 @@ export default function UnitsPage() {
             updatedUnits.sort((a, b) => parseInt(a.id!) - parseInt(b.id!));
             setUnits(updatedUnits);
             toast({ title: "Success", description: "Unit updated successfully." });
-        } catch (error) {
-            console.error("Error updating unit: ", error);
-            toast({ variant: "destructive", title: "Error", description: "Failed to update unit." });
-        }
-    } else {
-        try {
+        } else {
+            // Adding new unit
             const { id, ...newUnitData } = selectedUnit;
             const docRef = await addDoc(collection(firestore, 'units'), newUnitData);
-            const updatedUnits = [...units, { id: docRef.id, ...newUnitData }];
+            const finalNewUnit = { id: docRef.id, ...newUnitData };
+            const updatedUnits = [...units, finalNewUnit];
             updatedUnits.sort((a, b) => parseInt(a.id!) - parseInt(b.id!));
             setUnits(updatedUnits);
             toast({ title: "Success", description: "Unit added successfully." });
-        } catch (error) {
-            console.error("Error adding unit: ", error);
-            toast({ variant: "destructive", title: "Error", description: "Failed to add unit." });
         }
+    } catch (error) {
+        console.error("Error saving unit: ", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to save unit." });
+    } finally {
+        setIsLoading(false);
+        setIsEditDialogOpen(false);
+        setSelectedUnit(null);
     }
-
-    setIsEditDialogOpen(false);
-    setSelectedUnit(null);
   };
 
   const handleDeleteUnit = async () => {
     if (!selectedUnit || !selectedUnit.id) return;
+    setIsLoading(true);
     try {
         await deleteDoc(doc(firestore, 'units', selectedUnit.id));
         setUnits(units.filter((u) => u.id !== selectedUnit.id));
@@ -160,9 +172,11 @@ export default function UnitsPage() {
     } catch (error) {
         console.error("Error deleting unit: ", error);
         toast({ variant: "destructive", title: "Error", description: "Failed to delete unit." });
+    } finally {
+        setIsLoading(false);
+        setIsDeleteDialogOpen(false);
+        setSelectedUnit(null);
     }
-    setIsDeleteDialogOpen(false);
-    setSelectedUnit(null);
   };
 
   const handleFieldChange = (field: keyof Omit<Unit, 'id'>, value: any) => {
