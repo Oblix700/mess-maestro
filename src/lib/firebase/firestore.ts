@@ -1,6 +1,6 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { firestore } from './client';
-import type { Category } from '@/lib/types';
+import type { Category, UnitOfMeasure } from '@/lib/types';
 
 /**
  * Fetches all categories from the Firestore database.
@@ -20,5 +20,21 @@ export async function getCategories(): Promise<Category[]> {
     // In a real app, you'd want more robust error handling, maybe throwing the error
     // to be caught by an error boundary.
     return []; // Return empty array on error
+  }
+}
+
+/**
+ * Fetches all units of measure from the Firestore database.
+ * @returns A promise that resolves to an array of UOMs.
+ */
+export async function getUoms(): Promise<UnitOfMeasure[]> {
+  try {
+    const uomCollection = collection(firestore, 'unitsOfMeasure');
+    const querySnapshot = await getDocs(uomCollection);
+    const uomData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnitOfMeasure));
+    return uomData;
+  } catch (error) {
+    console.error("Error fetching UOMs: ", error);
+    return [];
   }
 }
