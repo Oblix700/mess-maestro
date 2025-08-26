@@ -1,6 +1,8 @@
 
 
 
+
+
 import { collection, doc, getDoc, getDocs, setDoc, query, where, orderBy } from 'firebase/firestore';
 import { firestore } from './client';
 import type { Category, UnitOfMeasure, Region, Supplier, Unit, Ingredient, Dish, Order, MenuDefinition, RationScaleItem, MonthlyStrength, User } from '@/lib/types';
@@ -15,7 +17,8 @@ export async function getCategories(): Promise<Category[]> {
   // e.g., where('kitchenId', '==', user.kitchenId)
   try {
     const categoriesCollection = collection(firestore, 'categories');
-    const querySnapshot = await getDocs(categoriesCollection);
+    const q = query(categoriesCollection, orderBy('name'));
+    const querySnapshot = await getDocs(q);
     const categoriesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
     return categoriesData;
   } catch (error) {
@@ -33,7 +36,8 @@ export async function getCategories(): Promise<Category[]> {
 export async function getUoms(): Promise<UnitOfMeasure[]> {
   try {
     const uomCollection = collection(firestore, 'unitsOfMeasure');
-    const querySnapshot = await getDocs(uomCollection);
+    const q = query(uomCollection, orderBy('name'));
+    const querySnapshot = await getDocs(q);
     const uomData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnitOfMeasure));
     return uomData;
   } catch (error) {
@@ -49,7 +53,8 @@ export async function getUoms(): Promise<UnitOfMeasure[]> {
 export async function getRegions(): Promise<Region[]> {
     try {
       const regionsCollection = collection(firestore, 'regions');
-      const querySnapshot = await getDocs(regionsCollection);
+      const q = query(regionsCollection, orderBy('name'));
+      const querySnapshot = await getDocs(q);
       const regionData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Region));
       return regionData;
     } catch (error) {
@@ -65,7 +70,8 @@ export async function getRegions(): Promise<Region[]> {
 export async function getSuppliers(): Promise<Supplier[]> {
     try {
         const suppliersCollection = collection(firestore, 'suppliers');
-        const querySnapshot = await getDocs(suppliersCollection);
+        const q = query(suppliersCollection, orderBy('name'));
+        const querySnapshot = await getDocs(q);
         const suppliersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
         return suppliersData;
     } catch (error) {
@@ -81,7 +87,8 @@ export async function getSuppliers(): Promise<Supplier[]> {
 export async function getUnits(): Promise<Unit[]> {
     try {
         const unitsCollection = collection(firestore, 'units');
-        const querySnapshot = await getDocs(unitsCollection);
+        const q = query(unitsCollection, orderBy('name'));
+        const querySnapshot = await getDocs(q);
         const unitsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
         return unitsData;
     } catch (error) {
@@ -97,7 +104,8 @@ export async function getUnits(): Promise<Unit[]> {
 export async function getIngredients(): Promise<Ingredient[]> {
     try {
         const ingredientsCollection = collection(firestore, 'ingredients');
-        const querySnapshot = await getDocs(ingredientsCollection);
+        const q = query(ingredientsCollection, orderBy('name'));
+        const querySnapshot = await getDocs(q);
         const ingredientsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
         return ingredientsData;
     } catch (error) {
@@ -113,7 +121,8 @@ export async function getIngredients(): Promise<Ingredient[]> {
 export async function getRationScale(): Promise<RationScaleItem[]> {
     try {
         const rationScaleCollection = collection(firestore, 'rationScaleItems');
-        const querySnapshot = await getDocs(rationScaleCollection);
+        const q = query(rationScaleCollection, orderBy('name'));
+        const querySnapshot = await getDocs(q);
         const rationScaleData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RationScaleItem));
         return rationScaleData;
     } catch (error) {
@@ -130,7 +139,8 @@ export async function getRationScale(): Promise<RationScaleItem[]> {
 export async function getDishes(): Promise<Dish[]> {
     try {
         const dishesCollection = collection(firestore, 'dishes');
-        const querySnapshot = await getDocs(dishesCollection);
+        const q = query(dishesCollection, orderBy('name'));
+        const querySnapshot = await getDocs(q);
         const dishesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Dish));
         return dishesData;
     } catch (error) {
@@ -224,7 +234,8 @@ export async function saveStrengthForMonth(data: MonthlyStrength): Promise<void>
 export async function getUsers(): Promise<User[]> {
     try {
         const usersCollection = collection(firestore, 'users');
-        const querySnapshot = await getDocs(usersCollection);
+        const q = query(usersCollection, orderBy('name'));
+        const querySnapshot = await getDocs(q);
         const usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
         return usersData;
     } catch (error) {

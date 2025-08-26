@@ -49,22 +49,9 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { getUnits } from '@/lib/firebase/firestore';
+import { getUnits, getUsers } from '@/lib/firebase/firestore';
 import { firestore } from '@/lib/firebase/client';
-import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
-
-
-async function getUsers(): Promise<User[]> {
-    try {
-        const usersCollection = collection(firestore, 'users');
-        const querySnapshot = await getDocs(usersCollection);
-        const usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-        return usersData;
-    } catch (error) {
-        console.error("Error fetching users: ", error);
-        return [];
-    }
-}
+import { collection, doc, addDoc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 
 
 export default function UsersPage() {
@@ -82,7 +69,7 @@ export default function UsersPage() {
       setIsLoading(true);
       try {
         const [usersData, unitsData] = await Promise.all([getUsers(), getUnits()]);
-        unitsData.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
+        unitsData.sort((a, b) => a.name.localeCompare(b.name));
         setUsers(usersData);
         setUnits(unitsData);
       } catch (error) {
@@ -112,7 +99,7 @@ export default function UsersPage() {
     setSelectedUser({ id: '', name: '', role: 'mess_staff' });
     setIsEditDialogOpen(true);
   }
-
+  
   const handleSaveUser = async () => {
     if (!selectedUser) return;
     if (!selectedUser.id || !selectedUser.name) {
@@ -124,22 +111,22 @@ export default function UsersPage() {
 
     try {
         const isEditing = users.some(u => u.id === selectedUser.id);
-        const userDataToSave = { ...selectedUser };
-        // Don't save the document ID inside the document itself
-        if ('id' in userDataToSave && !isEditing) {
-            delete (userDataToSave as Partial<User>).id;
-        }
+        
+        // This is the data that will be saved to Firestore.
+        // We create a copy and remove the `id` field from it
+        // because we don't want to save the document ID inside the document itself.
+        const { id: userId, ...userDataToSave } = selectedUser;
+
+        const userDocRef = doc(firestore, 'users', userId);
 
         if (isEditing) {
             // Update existing user
-            const userDocRef = doc(firestore, 'users', selectedUser.id);
             await updateDoc(userDocRef, userDataToSave);
             setUsers(users.map((u) => (u.id === selectedUser.id ? selectedUser : u)));
             toast({ title: "Success", description: "User updated successfully." });
         } else {
-            // Add new user - use the ID field as the document ID
-            const userDocRef = doc(firestore, 'users', selectedUser.id);
-            await addDoc(collection(firestore, 'users'), userDataToSave);
+            // Add new user using setDoc to specify the ID
+            await setDoc(userDocRef, userDataToSave);
             setUsers([...users, selectedUser]);
             toast({ title: "Success", description: "User added successfully." });
         }
