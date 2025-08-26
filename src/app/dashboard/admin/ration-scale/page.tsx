@@ -26,18 +26,25 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDocs } from 'firebase/firestore';
 import type { RationScaleItem, Ingredient, Category, UnitOfMeasure } from '@/lib/types';
 import { firestore } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getCategories, getIngredients, getUoms } from '@/lib/firebase/firestore';
+import { Loader2, Save } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface RationScaleRow extends RationScaleItem {
+  isModified?: boolean;
+}
 
 export default function RationScalePage() {
-  const [items, setItems] = useState<RationScaleItem[]>([]);
+  const [items, setItems] = useState<RationScaleRow[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [unitsOfMeasure, setUnitsOfMeasure] = useState<UnitOfMeasure[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [nameFilter, setNameFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -47,8 +54,6 @@ export default function RationScalePage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // For this page, we primarily need the ration scale.
-        // Other data is for populating dropdowns or displaying names.
         const [rationScaleSnap, ingredientsSnap, categoriesSnap, uomSnap] = await Promise.all([
           getDocs(collection(firestore, 'rationScaleItems')),
           getIngredients(),
@@ -56,11 +61,13 @@ export default function RationScalePage() {
           getUoms(),
         ]);
 
-        const rationScaleData = rationScaleSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as RationScaleItem));
+        const rationScaleData = rationScaleSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), isModified: false } as RationScaleRow));
         const ingredientsData = ingredientsSnap;
         const categoriesData = categoriesSnap;
         const uomData = uomSnap;
         
+        rationScaleData.sort((a,b) => a.name.localeCompare(b.name));
+
         setItems(rationScaleData);
         setIngredients(ingredientsData);
         setCategories(categoriesData);
@@ -89,21 +96,45 @@ export default function RationScalePage() {
     return categories.find(c => c.id === categoryId)?.name || 'N/A';
   }
 
-  const handleQuantityChange = (itemId: string, value: string) => {
-    // Replace comma with period for consistency
-    const sanitizedValue = value.replace(/,/, '.');
-    const newItems = items.map(item => 
-      item.id === itemId ? { ...item, quantity: Number(sanitizedValue) } : item
-    );
-    setItems(newItems);
-  };
+  const handleFieldChange = (itemId: string, field: 'quantity' | 'unitOfMeasureId', value: string | number) => {
+     setItems(prevItems => 
+      prevItems.map(item =>
+        item.id === itemId
+        ? { ...item, [field]: value, isModified: true }
+        : item
+      )
+     )
+  }
+
+  const handleSaveChanges = async () => {
+    const modifiedItems = items.filter(item => item.isModified);
+    if(modifiedItems.length === 0){
+      toast({ title: "No changes to save." });
+      return;
+    }
+    
+    setIsSaving(true);
+    const batch = writeBatch(firestore);
+
+    modifiedItems.forEach(item => {
+        const { isModified, ...itemData } = item;
+        const itemRef = doc(firestore, 'rationScaleItems', item.id);
+        batch.update(itemRef, itemData);
+    });
+
+    try {
+        await batch.commit();
+        toast({ title: "Success", description: "Ration scale updated successfully." });
+        setItems(prev => prev.map(item => ({...item, isModified: false})));
+    } catch (error) {
+        console.error("Error saving ration scale:", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to save changes." });
+    } finally {
+        setIsSaving(false);
+    }
+  }
   
-  const handleUomChange = (itemId: string, value: string) => {
-    const newItems = items.map(item => 
-      item.id === itemId ? { ...item, unitOfMeasureId: value } : item
-    );
-    setItems(newItems);
-  };
+  const hasChanges = useMemo(() => items.some(item => item.isModified), [items]);
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
@@ -126,6 +157,10 @@ export default function RationScalePage() {
               Manage the standard ration scale for each ingredient.
             </CardDescription>
           </div>
+           <Button onClick={handleSaveChanges} disabled={!hasChanges || isSaving || isLoading}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
         </div>
         <div className="mt-4 flex items-center gap-4">
             <Input
@@ -143,7 +178,7 @@ export default function RationScalePage() {
           </div>
       </CardHeader>
       <CardContent>
-        <div className="relative h-[calc(100vh-16rem)] overflow-auto border rounded-md">
+        <div className="relative h-[calc(100vh-18rem)] overflow-auto border rounded-md">
             <Table>
             <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
@@ -160,7 +195,7 @@ export default function RationScalePage() {
                     </TableRow>
                 ) : filteredItems.length > 0 ? (
                   filteredItems.map((item) => (
-                      <TableRow key={item.id}>
+                      <TableRow key={item.id} className={cn(item.isModified && "bg-blue-50 dark:bg-blue-900/20")}>
                           <TableCell className="font-medium">{getIngredientName(item.id)}</TableCell>
                           <TableCell>
                           {getCategoryName(item.categoryId)}
@@ -170,12 +205,12 @@ export default function RationScalePage() {
                                   type="text" 
                                   inputMode="decimal"
                                   value={item.quantity} 
-                                  onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                                  onChange={(e) => handleFieldChange(item.id, 'quantity', e.target.value.replace(/,/, '.'))}
                                   className="w-full" 
                               />
                           </TableCell>
                           <TableCell>
-                          <Select value={item.unitOfMeasureId} onValueChange={(value) => handleUomChange(item.id, value)}>
+                          <Select value={item.unitOfMeasureId} onValueChange={(value) => handleFieldChange(item.id, 'unitOfMeasureId', value)}>
                               <SelectTrigger>
                               <SelectValue placeholder="Select UOM" />
                               </SelectTrigger>
