@@ -1,8 +1,8 @@
 
 
-import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, query, where } from 'firebase/firestore';
 import { firestore } from './client';
-import type { Category, UnitOfMeasure, Region, Supplier, Unit, Ingredient, Dish, Order, MenuDefinition, RationScaleItem, MonthlyStrength } from '@/lib/types';
+import type { Category, UnitOfMeasure, Region, Supplier, Unit, Ingredient, Dish, Order, MenuDefinition, RationScaleItem, MonthlyStrength, User } from '@/lib/types';
 
 /**
  * Fetches all categories from the Firestore database.
@@ -207,9 +207,28 @@ export async function saveStrengthForMonth(data: MonthlyStrength): Promise<void>
     const docId = `${data.unitId}_${data.year}_${data.month}`;
     try {
         const strengthDocRef = doc(firestore, 'strengths', docId);
+        // We use setDoc with merge: true to avoid overwriting the whole document
+        // if only a few days are changed. This also creates the document if it doesn't exist.
         await setDoc(strengthDocRef, data, { merge: true });
     } catch (error) {
         console.error(`Error saving strength data for ${docId}:`, error);
         throw error;
+    }
+}
+
+
+/**
+ * Fetches all users from the Firestore database.
+ * @returns A promise that resolves to an array of Users.
+ */
+export async function getUsers(): Promise<User[]> {
+    try {
+        const usersCollection = collection(firestore, 'users');
+        const querySnapshot = await getDocs(usersCollection);
+        const usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+        return usersData;
+    } catch (error) {
+        console.error("Error fetching users: ", error);
+        return [];
     }
 }
