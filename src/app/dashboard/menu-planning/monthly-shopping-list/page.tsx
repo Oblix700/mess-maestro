@@ -7,17 +7,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function ShoppingListPage() {
+export default function MonthlyShoppingListPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Old Shopping List</CardTitle>
+        <CardTitle>Monthly Shopping List</CardTitle>
         <CardDescription>
-          This is a placeholder for the Shopping List page. This page may be removed or repurposed.
+          This will show an aggregated list of ingredients and quantities for a selected month.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Shopping list content will go here.</p>
+        <p>Placeholder content for the Monthly Shopping List.</p>
       </CardContent>
     </Card>
   );

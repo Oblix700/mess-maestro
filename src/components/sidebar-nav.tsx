@@ -26,6 +26,13 @@ import {
   CalendarDays,
   Calendar,
   RotateCcw,
+  Target,
+  FileText,
+  Percent,
+  CalendarSearch,
+  BookCheck,
+  DollarSign,
+  Send,
 } from "lucide-react";
 import {
   Collapsible,
@@ -58,13 +65,23 @@ const menuItems = [
     ],
   },
   {
-    href: "/dashboard/menu-planning",
-    label: "Menu Planning",
-    icon: ChefHat,
+    href: "/dashboard/menu-cycle-planning",
+    label: "Menu Cycle Planning",
+    icon: RotateCcw,
     subItems: [
-        { href: "/dashboard/menu-planning", label: "Monthly Menu", icon: CalendarDays },
-        { href: "/dashboard/menu-planning/28-day-menu-cycle", label: "28-Day Cycle", icon: RotateCcw },
-        { href: "/dashboard/menu-planning/calendar", label: "Calendar", icon: Calendar },
+        { href: "/dashboard/menu-planning/28-day-menu-cycle", label: "28-Day Cycle Menu", icon: BookCheck },
+        { href: "/dashboard/menu-planning/28-day-shopping-list", label: "28-Day Shopping List", icon: List },
+    ],
+  },
+  {
+    href: "/dashboard/monthly-planner",
+    label: "Monthly Planner",
+    icon: CalendarDays,
+    subItems: [
+        { href: "/dashboard/menu-planning/calendar", label: "Year Calendar", icon: CalendarSearch },
+        { href: "/dashboard/menu-planning/strength-planner", label: "Strength Planner", icon: Percent },
+        { href: "/dashboard/menu-planning", label: "Monthly Menus", icon: FileText },
+        { href: "/dashboard/menu-planning/monthly-shopping-list", label: "Monthly Shopping List", icon: List },
     ],
   },
   {
@@ -72,9 +89,10 @@ const menuItems = [
     label: "Purchasing",
     icon: ShoppingCart,
     subItems: [
-        { href: "/dashboard/purchasing/shopping-list", label: "Shopping List", icon: List },
-        { href: "/dashboard/purchasing/orders", label: "Orders", icon: ClipboardList },
+        { href: "/dashboard/purchasing/price-comparison", label: "Price Comparison", icon: DollarSign },
         { href: "/dashboard/purchasing/suppliers", label: "Suppliers", icon: Truck },
+        { href: "/dashboard/purchasing/orders", label: "Orders", icon: ClipboardList },
+        { href: "/dashboard/purchasing/generate-final-shopping-list", label: "Generate Final List", icon: Send },
     ]
   },
   {

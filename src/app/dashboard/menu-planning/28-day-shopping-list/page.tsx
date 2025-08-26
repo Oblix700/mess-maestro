@@ -7,17 +7,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function ShoppingListPage() {
+export default function TwentyEightDayShoppingListPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Old Shopping List</CardTitle>
+        <CardTitle>28-Day Shopping List</CardTitle>
         <CardDescription>
-          This is a placeholder for the Shopping List page. This page may be removed or repurposed.
+          This page will show an aggregated shopping list based on the 28-day menu cycle template.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Shopping list content will go here.</p>
+        <p>Placeholder content for the 28-day shopping list.</p>
       </CardContent>
     </Card>
   );

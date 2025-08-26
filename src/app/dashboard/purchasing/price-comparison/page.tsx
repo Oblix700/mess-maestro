@@ -7,17 +7,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function ShoppingListPage() {
+export default function PriceComparisonPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Old Shopping List</CardTitle>
+        <CardTitle>Price Comparison</CardTitle>
         <CardDescription>
-          This is a placeholder for the Shopping List page. This page may be removed or repurposed.
+          Compare ingredient prices from different suppliers to optimize purchasing costs.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <p>Shopping list content will go here.</p>
+        <p>Placeholder content for the Price Comparison tool.</p>
       </CardContent>
     </Card>
   );
