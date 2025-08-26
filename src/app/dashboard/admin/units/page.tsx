@@ -228,6 +228,7 @@ export default function UnitsPage() {
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
+                  <TableHead>ID</TableHead>
                   <TableHead>Unit Name</TableHead>
                   <TableHead>Mess</TableHead>
                   <TableHead>Regions</TableHead>
@@ -239,10 +240,11 @@ export default function UnitsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
+                    <TableCell colSpan={5} className="text-center">Loading...</TableCell>
                   </TableRow>
                 ) : units.map((unit) => (
                   <TableRow key={unit.id}>
+                    <TableCell className="font-mono text-xs">{unit.id}</TableCell>
                     <TableCell className="font-medium">{unit.name}</TableCell>
                     <TableCell>{unit.mess}</TableCell>
                     <TableCell>
