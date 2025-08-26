@@ -279,7 +279,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
         <TableHeader className="sticky top-0 bg-card z-10">
             <TableRow>
             <TableHead className="w-[40%]">Name</TableHead>
-            <TableHead className="w-[20%]">Category</TableHead>
+            <TableHead className="w-[25%]">Category</TableHead>
             <TableHead>Packaging Options</TableHead>
             <TableHead>
                 <span className="sr-only">Actions</span>
@@ -287,7 +287,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
             </TableRow>
         </TableHeader>
         <TableBody>
-            {ingredients.length === 0 ? (
+            {initialIngredients.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={4} className="text-center">Loading...</TableCell>
                 </TableRow>
@@ -341,7 +341,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
                 </TableCell>
             </TableRow>
             ))}
-                {ingredients.length > 0 && filteredIngredients.length === 0 && (
+                {initialIngredients.length > 0 && filteredIngredients.length === 0 && (
                 <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">
                         No ingredients found for the current filters.
