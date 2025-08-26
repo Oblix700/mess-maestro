@@ -19,7 +19,10 @@ const nextConfig: NextConfig = {
   },
   // This is to allow cross-origin requests from the development environment.
   allowedDevOrigins: [
+      'http://localhost:9002',
       'https://*.cloudworkstations.dev',
+      'http://*.cloudworkstations.dev',
+      'https://*.cluster-fbfjltn375c6wqxlhoehbz44sk.cloudworkstations.dev',
   ],
   experimental: {},
 };
