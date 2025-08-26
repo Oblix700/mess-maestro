@@ -125,9 +125,9 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
                 Add Region
             </Button>
         </div>
-      <div className="relative overflow-x-auto border rounded-md">
+      <div className="relative h-[calc(100vh-18rem)] overflow-auto border rounded-md">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 bg-card z-10">
             <TableRow>
               <TableHead>Region Name</TableHead>
               <TableHead>
