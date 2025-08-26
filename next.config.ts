@@ -17,13 +17,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    // This is to allow cross-origin requests in development.
-    // In a future version of Next.js, this will be the default behavior.
-    allowedDevOrigins: [
-      'https://*.cluster-fbfjltn375c6wqxlhoehbz44sk.cloudworkstations.dev',
-    ],
-  },
 };
 
 export default nextConfig;
