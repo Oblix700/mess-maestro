@@ -1,12 +1,6 @@
+
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -115,7 +109,7 @@ export function SupplierClientTable({ initialSuppliers }: SupplierClientTablePro
     setIsLoading(true);
     try {
         await deleteDoc(doc(firestore, 'suppliers', selectedSupplier.id));
-        setSuppliers(suppliers.filter((s) => s.id !== selectedSupplier.id));
+        setSuppliers(suppliers.filter((s) => (s.id !== selectedSupplier.id)));
         toast({ title: "Success", description: "Supplier deleted successfully." });
     } catch (error) {
         console.error("Error deleting supplier: ", error);
@@ -171,11 +165,7 @@ export function SupplierClientTable({ initialSuppliers }: SupplierClientTablePro
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center">Loading...</TableCell>
-              </TableRow>
-            ) : suppliers.length === 0 ? (
+            {suppliers.length === 0 ? (
                  <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground">No suppliers found.</TableCell>
                 </TableRow>
@@ -230,7 +220,7 @@ export function SupplierClientTable({ initialSuppliers }: SupplierClientTablePro
               Make changes to the supplier. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-6 py-4">
+          {selectedSupplier && <div className="grid gap-6 py-4">
             <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                     <Label htmlFor="name">Name</Label>
@@ -281,7 +271,7 @@ export function SupplierClientTable({ initialSuppliers }: SupplierClientTablePro
                 </div>
             </div>
 
-          </div>
+          </div>}
           <DialogFooter>
             <Button
               variant="outline"
