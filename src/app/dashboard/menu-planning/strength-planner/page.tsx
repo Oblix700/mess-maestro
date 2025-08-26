@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -26,7 +26,8 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getDaysInMonth, format, startOfMonth } from 'date-fns';
+import { getDaysInMonth, format } from 'date-fns';
+import { RotateCcw } from 'lucide-react';
 
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
@@ -43,12 +44,11 @@ interface StrengthData {
   };
 }
 
-const initialStrengthData = () => {
+const generateInitialDataForMonth = (year: number, month: number): StrengthData => {
     const data: StrengthData = {};
-    const date = new Date();
-    const daysInCurrentMonth = getDaysInMonth(date);
-    for (let day = 1; day <= daysInCurrentMonth; day++) {
-        const key = format(new Date(date.getFullYear(), date.getMonth(), day), 'yyyy-MM-dd');
+    const daysInMonth = getDaysInMonth(new Date(year, month));
+    for (let day = 1; day <= daysInMonth; day++) {
+        const key = format(new Date(year, month, day), 'yyyy-MM-dd');
         data[key] = {
             breakfast: 100,
             lunch: 100,
@@ -64,11 +64,16 @@ const initialStrengthData = () => {
 export default function StrengthPlannerPage() {
   const [year, setYear] = useState(currentYear);
   const [month, setMonth] = useState(new Date().getMonth());
-  const [strengths, setStrengths] = useState<StrengthData>(initialStrengthData());
+  const [strengths, setStrengths] = useState<StrengthData>(() => generateInitialDataForMonth(currentYear, new Date().getMonth()));
 
   const daysInSelectedMonth = useMemo(() => {
     const date = new Date(year, month);
     return Array.from({ length: getDaysInMonth(date) }, (_, i) => i + 1);
+  }, [year, month]);
+
+  // Regenerate strengths when year or month changes
+  React.useEffect(() => {
+    setStrengths(generateInitialDataForMonth(year, month));
   }, [year, month]);
 
   const handleStrengthChange = (day: number, mealType: keyof StrengthData[''], value: string) => {
@@ -77,7 +82,7 @@ export default function StrengthPlannerPage() {
     setStrengths(prev => ({
       ...prev,
       [key]: {
-        ...prev[key],
+        ...(prev[key] || generateInitialDataForMonth(year, month)[key]), // Ensure key exists
         [mealType]: isNaN(numericValue) ? 0 : numericValue,
       },
     }));
@@ -85,8 +90,13 @@ export default function StrengthPlannerPage() {
   
   const getStrengthValue = (day: number, mealType: keyof StrengthData['']) => {
     const key = format(new Date(year, month, day), 'yyyy-MM-dd');
-    return strengths[key]?.[mealType] ?? 0;
+    return strengths[key]?.[mealType] ?? (mealType.includes('Pack') || mealType.includes('Scale') || mealType.includes('Deploy') ? 0 : 100);
   }
+
+  const handleClearAll = () => {
+    setStrengths(generateInitialDataForMonth(year, month));
+  };
+
 
   return (
     <Card>
@@ -117,6 +127,10 @@ export default function StrengthPlannerPage() {
                         ))}
                     </SelectContent>
                 </Select>
+                <Button variant="outline" size="sm" onClick={handleClearAll} className="gap-1">
+                    <RotateCcw className="h-4 w-4" />
+                    Clear All
+                </Button>
                 <Button>Save Changes</Button>
             </div>
         </div>
