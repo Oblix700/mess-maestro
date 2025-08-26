@@ -18,7 +18,7 @@ export interface Region {
 }
 
 export interface Unit {
-  id?: string; // Optional because Firestore will generate it
+  id: string; 
   name: string;
   mess: string;
   regions?: string[];
@@ -85,7 +85,7 @@ export interface MealSection {
 
 export interface MenuDefinition {
   day: number;
-  kitchenId: string; // Added for multi-tenancy
+  kitchenId?: string; // Added for multi-tenancy
   sections: MealSection[];
 }
 

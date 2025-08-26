@@ -23,6 +23,9 @@ import {
   ShoppingCart,
   Warehouse,
   List,
+  CalendarDays,
+  Calendar,
+  RotateCcw,
 } from "lucide-react";
 import {
   Collapsible,
@@ -58,6 +61,11 @@ const menuItems = [
     href: "/dashboard/menu-planning",
     label: "Menu Planning",
     icon: ChefHat,
+    subItems: [
+        { href: "/dashboard/menu-planning", label: "Monthly Menu", icon: CalendarDays },
+        { href: "/dashboard/menu-planning/28-day-menu-cycle", label: "28-Day Cycle", icon: RotateCcw },
+        { href: "/dashboard/menu-planning/calendar", label: "Calendar", icon: Calendar },
+    ],
   },
   {
     href: "/dashboard/purchasing",

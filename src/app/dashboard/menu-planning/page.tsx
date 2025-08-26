@@ -1,97 +1,93 @@
 
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { MenuDay } from '@/components/menu-day';
-import { menuCycle } from '@/lib/menu-data';
-import type { MenuDefinition, MenuPlanItem } from '@/lib/types';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
-const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const daysInMonth = Array.from({ length: 31 }, (_, i) => i + 1);
+const meals = ['Breakfast', 'Lunch', 'Dinner'];
 
-export default function MenuPlanningPage() {
-  const [selectedDay, setSelectedDay] = useState(1);
-  const [currentMenu, setCurrentMenu] = useState<MenuDefinition | null>(null);
-
-  useEffect(() => {
-    // A real app would fetch this data for the selected kitchenId
-    const menuData = menuCycle.find((menu) => menu.day === selectedDay);
-    // Deep copy to prevent modifying the original placeholder data
-    setCurrentMenu(menuData ? JSON.parse(JSON.stringify(menuData)) : null);
-  }, [selectedDay]);
-
-  const handleDayChange = (value: string) => {
-    setSelectedDay(parseInt(value, 10));
-  };
-  
-  const handleItemChange = (sectionId: string, itemId: string, updatedValues: Partial<MenuPlanItem>) => {
-    if (!currentMenu) return;
-
-    const newMenu = { ...currentMenu };
-    const section = newMenu.sections.find(s => s.id === sectionId);
-    if (section) {
-      const itemIndex = section.items.findIndex(i => i.id === itemId);
-      if (itemIndex > -1) {
-        section.items[itemIndex] = { ...section.items[itemIndex], ...updatedValues };
-        setCurrentMenu(newMenu);
-      }
-    }
-  };
-
-
+export default function MonthlyMenuPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
             <div>
-              <CardTitle>28-Day Menu Cycle</CardTitle>
-              <CardDescription>
-                Select a day to view or edit its menu plan.
-              </CardDescription>
+                <CardTitle>Monthly Menu</CardTitle>
+                <CardDescription>
+                Plan and view the menu for the entire month.
+                </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-                <Select value={String(selectedDay)} onValueChange={handleDayChange}>
+                <Select defaultValue="july">
                     <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select a day" />
+                        <SelectValue placeholder="Select Month" />
                     </SelectTrigger>
                     <SelectContent>
-                        {Array.from({ length: 28 }, (_, i) => (
-                            <SelectItem key={i + 1} value={String(i + 1)}>
-                                Day {i + 1} ({daysOfWeek[i % 7]})
-                            </SelectItem>
-                        ))}
+                        <SelectItem value="june">June</SelectItem>
+                        <SelectItem value="july">July</SelectItem>
+                        <SelectItem value="august">August</SelectItem>
                     </SelectContent>
                 </Select>
                 <Button>Save Changes</Button>
             </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {currentMenu ? (
-         <MenuDay menu={currentMenu} onItemChange={handleItemChange} />
-      ) : (
-        <Card>
-            <CardContent className="pt-6">
-                <p>Please select a day to see the menu plan.</p>
-            </CardContent>
-        </Card>
-      )}
-    </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="relative h-[calc(100vh-14rem)] overflow-auto border rounded-md">
+            <Table>
+            <TableHeader className="sticky top-0 bg-card z-10">
+                <TableRow>
+                <TableHead className="w-[80px]">Date</TableHead>
+                <TableHead>Breakfast</TableHead>
+                <TableHead>Lunch</TableHead>
+                <TableHead>Dinner</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {daysInMonth.map((day) => (
+                    <TableRow key={day}>
+                        <TableCell className="font-bold">{day}</TableCell>
+                        {meals.map(meal => (
+                             <TableCell key={`${day}-${meal}`}>
+                                <Select>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder={`Select ${meal}...`} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {/* Populate with dishes */}
+                                        <SelectItem value="dish-1">Spaghetti Bolognese</SelectItem>
+                                        <SelectItem value="dish-2">Chicken Curry</SelectItem>
+                                        <SelectItem value="dish-3">Fish and Chips</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </TableCell>
+                        ))}
+                    </TableRow>
+                ))}
+            </TableBody>
+            </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
