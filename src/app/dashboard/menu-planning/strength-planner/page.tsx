@@ -142,12 +142,12 @@ export default function StrengthPlannerPage() {
                     <TableRow>
                         <TableHead className="w-[80px]">Date</TableHead>
                         <TableHead className="w-[80px]">Day</TableHead>
-                        <TableHead className="w-[120px]">B'fast %</TableHead>
-                        <TableHead className="w-[120px]">Lunch %</TableHead>
-                        <TableHead className="w-[120px]">Supper %</TableHead>
-                        <TableHead className="w-[120px]">LP %</TableHead>
-                        <TableHead className="w-[120px]">Scale M %</TableHead>
-                        <TableHead className="w-[120px]">Deploy %</TableHead>
+                        <TableHead>B'fast %</TableHead>
+                        <TableHead>Lunch %</TableHead>
+                        <TableHead>Supper %</TableHead>
+                        <TableHead>LP %</TableHead>
+                        <TableHead>Scale M %</TableHead>
+                        <TableHead>Deploy %</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
