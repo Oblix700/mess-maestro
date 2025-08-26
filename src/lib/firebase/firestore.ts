@@ -3,6 +3,7 @@
 
 
 
+
 import { collection, doc, getDoc, getDocs, setDoc, query, where, orderBy } from 'firebase/firestore';
 import { firestore } from './client';
 import type { Category, UnitOfMeasure, Region, Supplier, Unit, Ingredient, Dish, Order, MenuDefinition, RationScaleItem, MonthlyStrength, User } from '@/lib/types';
@@ -87,8 +88,8 @@ export async function getSuppliers(): Promise<Supplier[]> {
 export async function getUnits(): Promise<Unit[]> {
     try {
         const unitsCollection = collection(firestore, 'units');
-        const q = query(unitsCollection, orderBy('name'));
-        const querySnapshot = await getDocs(q);
+        // No default ordering by name, will sort on client
+        const querySnapshot = await getDocs(unitsCollection);
         const unitsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
         return unitsData;
     } catch (error) {

@@ -1,6 +1,4 @@
 
-'use client';
-
 import {
   Card,
   CardContent,
@@ -8,392 +6,40 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
-import type { Unit, Supplier } from '@/lib/types';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { firestore } from '@/lib/firebase/client';
-import { collection, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
-import { getSuppliers, getUnits } from '@/lib/firebase/firestore';
+import { getUnits, getSuppliers, getRegions } from '@/lib/firebase/firestore';
+import { UnitsClient } from './units-client';
 
+export default async function UnitsPage() {
+  const unitsData = await getUnits();
+  const suppliersData = await getSuppliers();
+  const regionsData = await getRegions();
 
-export default function UnitsPage() {
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [unitsData, suppliersData] = await Promise.all([
-          getUnits(),
-          getSuppliers(),
-        ]);
-        
-        unitsData.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
-
-        setUnits(unitsData);
-        setSuppliers(suppliersData);
-
-      } catch (error) {
-        console.error("Error fetching data: ", error);
-        toast({
-          variant: "destructive",
-          title: "Error fetching data",
-          description: "Could not fetch data from the database.",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [toast]);
-
-
-  const handleEditClick = (unit: Unit) => {
-    const unitWithAccounts = {
-        ...unit,
-        supplierAccounts: Array.isArray(unit.supplierAccounts) ? unit.supplierAccounts : [],
-    };
-    setSelectedUnit(unitWithAccounts);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleDeleteClick = (unit: Unit) => {
-    setSelectedUnit(unit);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleAddClick = () => {
-    setSelectedUnit({ id: '', name: '', mess: '', supplierAccounts: [] });
-    setIsEditDialogOpen(true);
-  }
-
-  const handleSaveUnit = async () => {
-    if (!selectedUnit) return;
-
-    if (!selectedUnit.name || !selectedUnit.mess) {
-        toast({ variant: "destructive", title: "Validation Error", description: "Unit Name and Mess are required." });
-        return;
+  unitsData.sort((a, b) => {
+    const aNum = parseInt(a.id.replace(/\D/g,''), 10);
+    const bNum = parseInt(b.id.replace(/\D/g,''), 10);
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return aNum - bNum;
     }
-
-    setIsSubmitting(true);
-
-    try {
-        if (selectedUnit.id) {
-            const unitDocRef = doc(firestore, 'units', selectedUnit.id);
-            const { id, ...unitData } = selectedUnit;
-            await updateDoc(unitDocRef, unitData);
-            const updatedUnits = units.map((u) => (u.id === selectedUnit.id ? selectedUnit : u));
-            updatedUnits.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
-            setUnits(updatedUnits);
-            toast({ title: "Success", description: "Unit updated successfully." });
-        } else {
-            const { id, ...newUnitData } = selectedUnit;
-            const docRef = await addDoc(collection(firestore, 'units'), newUnitData);
-            const finalNewUnit = { id: docRef.id, ...newUnitData };
-            const updatedUnits = [...units, finalNewUnit];
-            updatedUnits.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
-            setUnits(updatedUnits);
-            toast({ title: "Success", description: "Unit added successfully." });
-        }
-    } catch (error) {
-        console.error("Error saving unit: ", error);
-        toast({ variant: "destructive", title: "Error", description: "Failed to save unit." });
-    } finally {
-        setIsSubmitting(false);
-        setIsEditDialogOpen(false);
-        setSelectedUnit(null);
-    }
-  };
-
-  const handleDeleteUnit = async () => {
-    if (!selectedUnit || !selectedUnit.id) return;
-    setIsSubmitting(true);
-    try {
-        await deleteDoc(doc(firestore, 'units', selectedUnit.id));
-        setUnits(units.filter((u) => u.id !== selectedUnit.id));
-        toast({ title: "Success", description: "Unit deleted successfully." });
-    } catch (error) {
-        console.error("Error deleting unit: ", error);
-        toast({ variant: "destructive", title: "Error", description: "Failed to delete unit." });
-    } finally {
-        setIsSubmitting(false);
-        setIsDeleteDialogOpen(false);
-        setSelectedUnit(null);
-    }
-  };
-
-  const handleFieldChange = (field: keyof Omit<Unit, 'id'>, value: any) => {
-    if (selectedUnit) {
-      setSelectedUnit({ ...selectedUnit, [field]: value });
-    }
-  };
-
-  const handleAccountChange = (index: number, field: 'supplierId' | 'accountNumber', value: string) => {
-    if (selectedUnit) {
-      const updatedAccounts = [...(selectedUnit.supplierAccounts || [])];
-      updatedAccounts[index] = { ...updatedAccounts[index], [field]: value };
-      handleFieldChange('supplierAccounts', updatedAccounts);
-    }
-  };
-
-  const addAccount = () => {
-    if (selectedUnit) {
-        const newAccount = { supplierId: '', accountNumber: '' };
-        const updatedAccounts = [...(selectedUnit.supplierAccounts || []), newAccount];
-        handleFieldChange('supplierAccounts', updatedAccounts);
-    }
-  };
-
-  const removeAccount = (index: number) => {
-    if (selectedUnit) {
-        const updatedAccounts = [...(selectedUnit.supplierAccounts || [])];
-        updatedAccounts.splice(index, 1);
-        handleFieldChange('supplierAccounts', updatedAccounts);
-    }
-  };
-
-  const getSupplierName = (supplierId: string) => {
-    if (!suppliers || suppliers.length === 0) return 'Loading...';
-    const supplier = suppliers.find(s => s.id === supplierId);
-    return supplier ? `${supplier.name} (${supplier.regions?.join(', ') || ''})` : 'Unknown Supplier';
-  };
+    return a.name.localeCompare(b.name);
+  });
 
   return (
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Units</CardTitle>
-              <CardDescription>
-                Manage your kitchens, messes, and their supplier account details.
-              </CardDescription>
-            </div>
-            <Button size="sm" className="gap-1" onClick={handleAddClick}>
-              <PlusCircle className="h-4 w-4" />
-              Add Unit
-            </Button>
-          </div>
+          <CardTitle>Units</CardTitle>
+          <CardDescription>
+            Manage your kitchens, messes, and their supplier account details.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative overflow-x-auto border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">ID</TableHead>
-                  <TableHead>Unit Name</TableHead>
-                  <TableHead>Mess</TableHead>
-                  <TableHead>Regions</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center">Loading...</TableCell>
-                  </TableRow>
-                ) : units.map((unit) => (
-                  <TableRow key={unit.id}>
-                    <TableCell className="font-mono text-xs">{unit.id}</TableCell>
-                    <TableCell className="font-medium">{unit.name}</TableCell>
-                    <TableCell>{unit.mess}</TableCell>
-                    <TableCell>
-                      {unit.regions && unit.regions.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {unit.regions.map((region, index) => (
-                            <Badge key={index} variant="outline">{region}</Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">No regions</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleEditClick(unit)}
-                        >
-                            <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                        </Button>
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => handleDeleteClick(unit)}
-                            className="text-destructive hover:text-destructive"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <UnitsClient 
+            initialUnits={unitsData}
+            initialSuppliers={suppliersData}
+            initialRegions={regionsData}
+          />
         </CardContent>
       </Card>
-
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{selectedUnit?.id ? 'Edit Unit' : 'Add Unit'}</DialogTitle>
-            <DialogDescription>
-              {selectedUnit?.id ? "Make changes to the unit. Click save when you're done." : 'Add a new unit to the database.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Unit Name
-              </Label>
-              <Input
-                id="name"
-                value={selectedUnit?.name || ''}
-                onChange={(e) => handleFieldChange('name', e.target.value)}
-                className="col-span-3"
-                placeholder="e.g. AFB WKLF"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="mess" className="text-right">
-                Mess
-              </Label>
-              <Input
-                id="mess"
-                value={selectedUnit?.mess || ''}
-                onChange={(e) => handleFieldChange('mess', e.target.value)}
-                className="col-span-3"
-                placeholder="e.g. NCO Mess"
-              />
-            </div>
-            <div className="col-span-4">
-              <Label className="font-semibold">Supplier Accounts</Label>
-              <div className="mt-2 space-y-2 rounded-lg border p-4">
-                {(selectedUnit?.supplierAccounts || []).map((account, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                     <Select value={account.supplierId} onValueChange={(value) => handleAccountChange(index, 'supplierId', value)}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select Supplier" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {suppliers.map(s => (
-                                <SelectItem key={s.id} value={s.id}>{getSupplierName(s.id)}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Input
-                      type="text"
-                      placeholder="Account Number"
-                      value={account.accountNumber}
-                      onChange={(e) => handleAccountChange(index, 'accountNumber', e.target.value)}
-                    />
-                    <Button variant="ghost" size="icon" onClick={() => removeAccount(index)} className="text-destructive hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                {(!selectedUnit?.supplierAccounts || selectedUnit.supplierAccounts.length === 0) && (
-                    <p className="text-sm text-muted-foreground text-center">No supplier accounts added.</p>
-                )}
-                <Button variant="outline" size="sm" onClick={addAccount} className="mt-2">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add Account
-                </Button>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleSaveUnit} disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save changes'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              unit.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteUnit}
-              disabled={isSubmitting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isSubmitting ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
-
-    
