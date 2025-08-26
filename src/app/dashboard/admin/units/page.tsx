@@ -76,7 +76,6 @@ export default function UnitsPage() {
         const unitsData = unitsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
         const suppliersData = suppliersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
         
-        // Sort units by ID numerically
         unitsData.sort((a, b) => {
             const idA = parseInt(a.id || '0');
             const idB = parseInt(b.id || '0');
@@ -102,7 +101,6 @@ export default function UnitsPage() {
 
 
   const handleEditClick = (unit: Unit) => {
-    // Ensure supplierAccounts is an array
     const unitWithAccounts = {
         ...unit,
         supplierAccounts: Array.isArray(unit.supplierAccounts) ? unit.supplierAccounts : [],
@@ -124,7 +122,6 @@ export default function UnitsPage() {
   const handleSaveUnit = async () => {
     if (!selectedUnit) return;
 
-    // A unit must have a name
     if (!selectedUnit.name || !selectedUnit.mess) {
         toast({ variant: "destructive", title: "Validation Error", description: "Unit Name and Mess are required." });
         return;
@@ -134,7 +131,6 @@ export default function UnitsPage() {
 
     try {
         if (selectedUnit.id) {
-            // Editing existing unit
             const unitDocRef = doc(firestore, 'units', selectedUnit.id);
             const { id, ...unitData } = selectedUnit;
             await updateDoc(unitDocRef, unitData);
@@ -143,7 +139,6 @@ export default function UnitsPage() {
             setUnits(updatedUnits);
             toast({ title: "Success", description: "Unit updated successfully." });
         } else {
-            // Adding new unit
             const { id, ...newUnitData } = selectedUnit;
             const docRef = await addDoc(collection(firestore, 'units'), newUnitData);
             const finalNewUnit = { id: docRef.id, ...newUnitData };
@@ -233,9 +228,9 @@ export default function UnitsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="relative h-[calc(100vh-14rem)] overflow-auto border rounded-md">
+          <div className="relative overflow-x-auto border rounded-md">
             <Table>
-              <TableHeader className="sticky top-0 bg-card z-10">
+              <TableHeader>
                 <TableRow>
                   <TableHead className="w-[80px]">ID</TableHead>
                   <TableHead>Unit Name</TableHead>
@@ -296,7 +291,6 @@ export default function UnitsPage() {
         </CardContent>
       </Card>
 
-      {/* Edit/Add Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -378,7 +372,6 @@ export default function UnitsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
