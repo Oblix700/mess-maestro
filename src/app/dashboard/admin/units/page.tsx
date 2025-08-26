@@ -291,7 +291,7 @@ export default function UnitsPage() {
           <DialogHeader>
             <DialogTitle>{selectedUnit?.id ? 'Edit Unit' : 'Add Unit'}</DialogTitle>
             <DialogDescription>
-              {selectedUnit?.id ? 'Make changes to the unit. Click save when you\\'re done.' : 'Add a new unit to the database.'}
+              {selectedUnit?.id ? "Make changes to the unit. Click save when you're done." : 'Add a new unit to the database.'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
