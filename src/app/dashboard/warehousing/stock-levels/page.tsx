@@ -19,12 +19,12 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { collection, getDocs } from 'firebase/firestore';
 import type { Ingredient, UnitOfMeasure, IngredientVariant } from '@/lib/types';
-import { firestore } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getIngredients, getUoms } from '@/lib/firebase/firestore';
+
 
 interface StockItem extends IngredientVariant {
   ingredientName: string;
@@ -47,27 +47,24 @@ export default function StockLevelsPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [ingredientsSnap, uomSnap] = await Promise.all([
-          getDocs(collection(firestore, 'ingredients')),
-          getDocs(collection(firestore, 'unitsOfMeasure')),
+        const [ingredientsData, uomData] = await Promise.all([
+          getIngredients(),
+          getUoms(),
         ]);
-
-        const ingredientsData = ingredientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
-        const uomData = uomSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnitOfMeasure));
 
         const flattenedStockItems: StockItem[] = ingredientsData.flatMap(ingredient =>
           ingredient.variants.map(variant => {
-            const currentLevel = variant.stock; // Initially, current level is the stock from DB
+            const currentStock = variant.stock;
             return {
               ...variant,
               ingredientName: ingredient.name,
               ingredientId: ingredient.id,
-              openingStock: variant.stock, 
+              openingStock: currentStock, 
               received: 0, 
               issued: 0, 
-              currentLevel: currentLevel,
-              stocktake: currentLevel, // Default stocktake to current level
-              discrepancy: 0, // Initially no discrepancy
+              currentLevel: currentStock,
+              stocktake: currentStock,
+              discrepancy: 0,
             };
           })
         );
@@ -94,19 +91,19 @@ export default function StockLevelsPage() {
   };
 
   const handleStocktakeChange = (itemId: string, value: string) => {
-    const stocktakeValue = Number(value);
-    const newStockItems = stockItems.map(item => {
+    const stocktakeValue = value === '' ? NaN : Number(value);
+    setStockItems(stockItems.map(item => {
       if (item.id === itemId) {
-        const discrepancy = stocktakeValue - item.currentLevel;
+        const newStocktake = isNaN(stocktakeValue) ? item.currentLevel : stocktakeValue;
+        const discrepancy = newStocktake - item.currentLevel;
         return { 
           ...item, 
-          stocktake: stocktakeValue,
+          stocktake: newStocktake,
           discrepancy: discrepancy,
         };
       }
       return item;
-    });
-    setStockItems(newStockItems);
+    }));
   };
 
   return (
@@ -137,7 +134,7 @@ export default function StockLevelsPage() {
                 <TableHead>Current</TableHead>
                 <TableHead className="w-[120px]">Stocktake</TableHead>
                 <TableHead>Discrepancy</TableHead>
-                <TableHead>Correction</TableHead>
+                <TableHead>Corrected Stock</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -161,18 +158,20 @@ export default function StockLevelsPage() {
                         defaultValue={item.stocktake}
                         onBlur={(e) => handleStocktakeChange(item.id, e.target.value)}
                         className="w-full"
+                        placeholder="Enter count"
                       />
                     </TableCell>
                     <TableCell 
                       className={cn(
+                        "font-medium",
                         item.discrepancy < 0 && "text-destructive",
                         item.discrepancy > 0 && "text-green-600"
                       )}
                     >
-                      {item.discrepancy}
+                      {item.discrepancy !== 0 ? item.discrepancy : "-"}
                     </TableCell>
-                    <TableCell>
-                      {item.stocktake}
+                    <TableCell className="font-medium">
+                      {item.discrepancy !== 0 ? item.stocktake : item.currentLevel}
                     </TableCell>
                   </TableRow>
                 ))
