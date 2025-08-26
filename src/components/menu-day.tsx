@@ -64,7 +64,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
 
     return (
         <TableRow>
-            <TableCell className="w-[250px] p-2">
+            <TableCell className="p-2">
                  <Select value={item.mealPlanCategoryId} onValueChange={handleCategoryChange}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select category..." />
@@ -76,7 +76,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
                     </SelectContent>
                 </Select>
             </TableCell>
-            <TableCell className="w-[300px] p-2">
+            <TableCell className="p-2">
                 <Select value={item.ingredientId || ''} onValueChange={handleIngredientChange}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select ingredient..." />
@@ -88,13 +88,13 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
                     </SelectContent>
                 </Select>
             </TableCell>
-            <TableCell className="w-[100px] p-2">
+            <TableCell className="p-2">
                 <Input value={scale} readOnly className="bg-muted" />
             </TableCell>
-            <TableCell className="w-[80px] p-2">
+            <TableCell className="p-2">
                 <Input value={uom} readOnly className="bg-muted" />
             </TableCell>
-             <TableCell className="w-[200px] p-2">
+             <TableCell className="p-2">
                 <Select>
                     <SelectTrigger>
                         <SelectValue placeholder="Select dish..." />
@@ -104,7 +104,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange }: { item: MenuPlanItem, se
                     </SelectContent>
                 </Select>
             </TableCell>
-            <TableCell className="w-[100px] p-2">
+            <TableCell className="p-2">
                 <Input defaultValue={item.strength} type="number" />
             </TableCell>
             <TableCell className="text-right p-2">
@@ -137,13 +137,13 @@ const MealSectionCard = ({ section, onItemChange }: { section: MealSection, onIt
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="p-2">Meal Plan</TableHead>
-              <TableHead className="p-2">Main Ingredient</TableHead>
-              <TableHead className="p-2">Scale</TableHead>
-              <TableHead className="p-2">UoM</TableHead>
-              <TableHead className="p-2">Dish Name</TableHead>
-              <TableHead className="p-2">Strength %</TableHead>
-              <TableHead className="p-2"><span className="sr-only">Actions</span></TableHead>
+              <TableHead className="p-2 w-1/4">Meal Plan</TableHead>
+              <TableHead className="p-2 w-1/4">Main Ingredient</TableHead>
+              <TableHead className="p-2 w-[100px]">Scale</TableHead>
+              <TableHead className="p-2 w-[80px]">UoM</TableHead>
+              <TableHead className="p-2 w-1/6">Dish Name</TableHead>
+              <TableHead className="p-2 w-[120px]">Strength %</TableHead>
+              <TableHead className="p-2 w-[50px]"><span className="sr-only">Actions</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
