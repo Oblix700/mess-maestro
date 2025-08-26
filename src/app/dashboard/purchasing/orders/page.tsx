@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import {
   Card,
@@ -54,8 +55,8 @@ export default async function OrdersPage() {
             <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
                 <TableHead>Order ID</TableHead>
-                <TableHead>Date Generated</TableHead>
-                <TableHead>Day Range</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Period</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>
                     <span className="sr-only">Actions</span>
@@ -72,9 +73,9 @@ export default async function OrdersPage() {
                 ) : (
                     orders.map((order) => (
                     <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.id}</TableCell>
-                        <TableCell>{order.dateGenerated}</TableCell>
-                        <TableCell>{order.dayRange}</TableCell>
+                        <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                        <TableCell>{order.orderDate}</TableCell>
+                        <TableCell>{`${order.periodStartDate} to ${order.periodEndDate}`}</TableCell>
                         <TableCell>
                         <Badge
                             variant={

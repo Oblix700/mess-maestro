@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,8 +31,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Check, ChevronsUpDown } from 'lucide-react';
-import type { Unit } from '@/lib/types';
+import { Loader2, Sparkles, Check, ChevronsUpDown, Save } from 'lucide-react';
+import type { Unit, Order } from '@/lib/types';
 import { getUnits } from '@/lib/firebase/firestore';
 import {
   Popover,
@@ -48,6 +49,8 @@ import {
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
+import { addDoc, collection } from 'firebase/firestore';
+import { firestore } from '@/lib/firebase/client';
 
 const formSchema = z.object({
   unitIds: z.array(z.string()).min(1, 'At least one unit must be selected.'),
@@ -57,14 +60,28 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+async function saveOrder(orderData: Omit<Order, 'id'>) {
+    try {
+        const ordersCollection = collection(firestore, 'orders');
+        const docRef = await addDoc(ordersCollection, orderData);
+        return docRef.id;
+    } catch (error) {
+        console.error("Error saving order:", error);
+        throw error;
+    }
+}
+
+
 export function OrderGenerationForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [procurementList, setProcurementList] =
     useState<GenerateProcurementListOutput | null>(null);
   const [units, setUnits] = useState<Unit[]>([]);
   const [open, setOpen] = useState(false);
 
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -118,6 +135,40 @@ export function OrderGenerationForm() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSaveOrder = async () => {
+    if (!procurementList || !form.getValues('unitIds').length) return;
+    setIsSaving(true);
+    
+    const formValues = form.getValues();
+
+    const newOrder: Omit<Order, 'id'> = {
+        orderDate: new Date().toISOString().split('T')[0],
+        periodStartDate: formValues.startDate,
+        periodEndDate: formValues.endDate,
+        unitIds: formValues.unitIds,
+        status: 'Pending',
+        items: procurementList.itemsToProcure
+    };
+
+    try {
+        await saveOrder(newOrder);
+        toast({
+            title: 'Order Saved',
+            description: 'The new procurement order has been saved successfully.',
+        });
+        router.push('/dashboard/purchasing/orders');
+    } catch (error) {
+        console.error('Failed to save order:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Save Failed',
+            description: 'Could not save the order. Please try again.',
+        });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -233,7 +284,7 @@ export function OrderGenerationForm() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" disabled={isLoading} className="w-full">
+            <Button type="submit" disabled={isLoading || isSaving} className="w-full">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -247,7 +298,7 @@ export function OrderGenerationForm() {
         </form>
       </Card>
 
-      <Card>
+      <Card className="flex flex-col">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -257,7 +308,7 @@ export function OrderGenerationForm() {
             A consolidated list of items to order based on your selection.
           </CardDescription>
         </CardHeader>
-        <CardContent className="min-h-[250px] max-h-[calc(100vh-22rem)] overflow-auto">
+        <CardContent className="flex-grow min-h-[250px] max-h-[calc(100vh-25rem)] overflow-auto">
           {isLoading && (
             <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -305,6 +356,14 @@ export function OrderGenerationForm() {
             </Table>
           )}
         </CardContent>
+         {procurementList && procurementList.itemsToProcure.length > 0 && (
+            <CardFooter>
+                 <Button onClick={handleSaveOrder} disabled={isSaving || isLoading} className="w-full">
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    Save Order
+                </Button>
+            </CardFooter>
+        )}
       </Card>
     </div>
   );

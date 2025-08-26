@@ -1,6 +1,7 @@
 
 
 
+
 export interface Category {
   id: string;
   name: string;
@@ -50,12 +51,21 @@ export interface Dish {
   ingredients: { ingredientId: string; quantity: number }[];
 }
 
+export interface OrderItem {
+  ingredientId: string;
+  ingredientName: string;
+  quantityToOrder: number;
+  unitOfMeasure: string;
+}
+
 export interface Order {
   id: string;
-  kitchenId: string; // Added for multi-tenancy
-  dateGenerated: string;
-  dayRange: string;
-  status: "Pending" | "Completed" | "Cancelled";
+  orderDate: string;
+  periodStartDate: string;
+  periodEndDate: string;
+  unitIds: string[];
+  status: 'Pending' | 'Completed' | 'Cancelled';
+  items: OrderItem[];
 }
 
 export interface RationScaleItem {

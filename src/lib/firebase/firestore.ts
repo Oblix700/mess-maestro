@@ -1,6 +1,7 @@
 
 
-import { collection, doc, getDoc, getDocs, setDoc, query, where } from 'firebase/firestore';
+
+import { collection, doc, getDoc, getDocs, setDoc, query, where, orderBy } from 'firebase/firestore';
 import { firestore } from './client';
 import type { Category, UnitOfMeasure, Region, Supplier, Unit, Ingredient, Dish, Order, MenuDefinition, RationScaleItem, MonthlyStrength, User } from '@/lib/types';
 
@@ -145,10 +146,9 @@ export async function getDishes(): Promise<Dish[]> {
 export async function getOrders(): Promise<Order[]> {
     try {
         const ordersCollection = collection(firestore, 'orders');
-        const querySnapshot = await getDocs(ordersCollection);
+        const q = query(ordersCollection, orderBy('orderDate', 'desc'));
+        const querySnapshot = await getDocs(q);
         const ordersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
-        // Sort by date descending for most recent first
-        ordersData.sort((a, b) => new Date(b.dateGenerated).getTime() - new Date(a.dateGenerated).getTime());
         return ordersData;
     } catch (error) {
         console.error("Error fetching orders: ", error);
