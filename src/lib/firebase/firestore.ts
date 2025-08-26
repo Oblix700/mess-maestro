@@ -1,0 +1,24 @@
+import { collection, getDocs } from 'firebase/firestore';
+import { firestore } from './client';
+import type { Category } from '@/lib/types';
+
+/**
+ * Fetches all categories from the Firestore database.
+ * TODO: Add kitchenId parameter for multi-tenancy.
+ * @returns A promise that resolves to an array of categories.
+ */
+export async function getCategories(): Promise<Category[]> {
+  // In a real multi-tenant app, you would add a where() clause here.
+  // e.g., where('kitchenId', '==', user.kitchenId)
+  try {
+    const categoriesCollection = collection(firestore, 'categories');
+    const querySnapshot = await getDocs(categoriesCollection);
+    const categoriesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+    return categoriesData;
+  } catch (error) {
+    console.error("Error fetching categories: ", error);
+    // In a real app, you'd want more robust error handling, maybe throwing the error
+    // to be caught by an error boundary.
+    return []; // Return empty array on error
+  }
+}

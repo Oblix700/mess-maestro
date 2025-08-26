@@ -17,22 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
 import type { Category } from '@/lib/types';
-import { firestore } from '@/lib/firebase/client';
-import { collection, getDocs } from 'firebase/firestore';
-
-async function getCategories(): Promise<Category[]> {
-  // In a real multi-tenant app, you would add a where() clause here.
-  // e.g., where('kitchenId', '==', user.kitchenId)
-  try {
-    const categoriesCollection = collection(firestore, 'categories');
-    const querySnapshot = await getDocs(categoriesCollection);
-    const categoriesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
-    return categoriesData;
-  } catch (error) {
-    console.error("Error fetching categories: ", error);
-    return []; // Return empty array on error
-  }
-}
+import { getCategories } from '@/lib/firebase/firestore';
 
 // TODO: The action buttons (Edit, Delete) will need to be refactored into
 // a separate client component that takes the category data as a prop.
