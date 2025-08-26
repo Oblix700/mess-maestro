@@ -48,7 +48,7 @@ import type { Unit, Supplier } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { firestore } from '@/lib/firebase/client';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { getSuppliers, getUnits } from '@/lib/firebase/firestore';
@@ -58,6 +58,7 @@ export default function UnitsPage() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
@@ -119,7 +120,7 @@ export default function UnitsPage() {
         return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
         if (selectedUnit.id) {
@@ -143,7 +144,7 @@ export default function UnitsPage() {
         console.error("Error saving unit: ", error);
         toast({ variant: "destructive", title: "Error", description: "Failed to save unit." });
     } finally {
-        setIsLoading(false);
+        setIsSubmitting(false);
         setIsEditDialogOpen(false);
         setSelectedUnit(null);
     }
@@ -151,7 +152,7 @@ export default function UnitsPage() {
 
   const handleDeleteUnit = async () => {
     if (!selectedUnit || !selectedUnit.id) return;
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
         await deleteDoc(doc(firestore, 'units', selectedUnit.id));
         setUnits(units.filter((u) => u.id !== selectedUnit.id));
@@ -160,7 +161,7 @@ export default function UnitsPage() {
         console.error("Error deleting unit: ", error);
         toast({ variant: "destructive", title: "Error", description: "Failed to delete unit." });
     } finally {
-        setIsLoading(false);
+        setIsSubmitting(false);
         setIsDeleteDialogOpen(false);
         setSelectedUnit(null);
     }
@@ -356,10 +357,13 @@ export default function UnitsPage() {
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveUnit}>Save changes</Button>
+            <Button onClick={handleSaveUnit} disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save changes'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -377,12 +381,13 @@ export default function UnitsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteUnit}
+              disabled={isSubmitting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {isSubmitting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -390,3 +395,5 @@ export default function UnitsPage() {
     </>
   );
 }
+
+    
