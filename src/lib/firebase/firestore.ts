@@ -1,6 +1,6 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { firestore } from './client';
-import type { Category, UnitOfMeasure } from '@/lib/types';
+import type { Category, UnitOfMeasure, Region } from '@/lib/types';
 
 /**
  * Fetches all categories from the Firestore database.
@@ -38,3 +38,19 @@ export async function getUoms(): Promise<UnitOfMeasure[]> {
     return [];
   }
 }
+
+/**
+ * Fetches all regions from the Firestore database.
+ * @returns A promise that resolves to an array of Regions.
+ */
+export async function getRegions(): Promise<Region[]> {
+    try {
+      const regionsCollection = collection(firestore, 'regions');
+      const querySnapshot = await getDocs(regionsCollection);
+      const regionData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Region));
+      return regionData;
+    } catch (error) {
+      console.error("Error fetching regions: ", error);
+      return [];
+    }
+  }
