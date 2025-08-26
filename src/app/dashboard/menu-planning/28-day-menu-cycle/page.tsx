@@ -45,7 +45,6 @@ export default function MenuPlanningPage() {
   const fetchMenuData = useCallback(async (day: number) => {
     setIsLoading(true);
     try {
-      // Fetch all required data in parallel
       const [
         menuData,
         categoriesData,
@@ -113,12 +112,41 @@ export default function MenuPlanningPage() {
     }
   };
 
+  const handleAddItem = (sectionId: string) => {
+    if (!currentMenu) return;
+
+    const newMenu = { ...currentMenu };
+    const section = newMenu.sections.find(s => s.id === sectionId);
+    if (section) {
+      const newItem: MenuPlanItem = {
+        id: `new_${Date.now()}_${Math.random()}`, // Simple unique ID
+        mealPlanCategoryId: '',
+        ingredientId: null,
+        dishId: null,
+        strength: 100,
+      };
+      section.items.push(newItem);
+      setCurrentMenu(newMenu);
+    }
+  };
+
+  const handleRemoveItem = (sectionId: string, itemId: string) => {
+    if (!currentMenu) return;
+
+    const newMenu = { ...currentMenu };
+    const section = newMenu.sections.find(s => s.id === sectionId);
+    if (section) {
+      section.items = section.items.filter(item => item.id !== itemId);
+      setCurrentMenu(newMenu);
+    }
+  };
+
+
   const handleSaveChanges = async () => {
     if (!currentMenu) return;
     setIsSaving(true);
     try {
       const menuDocRef = doc(firestore, 'menuCycle', String(currentMenu.day));
-      // Firestore doesn't like undefined values, so we stringify and parse to clean it up.
       const cleanedMenu = JSON.parse(JSON.stringify(currentMenu));
       await updateDoc(menuDocRef, cleanedMenu);
       setInitialMenuJson(JSON.stringify(currentMenu));
@@ -185,6 +213,8 @@ export default function MenuPlanningPage() {
          <MenuDay 
             menu={currentMenu} 
             onItemChange={handleItemChange} 
+            onAddItem={handleAddItem}
+            onRemoveItem={handleRemoveItem}
             categories={categories}
             rationScaleItems={rationScaleItems}
             unitsOfMeasure={unitsOfMeasure}

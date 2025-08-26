@@ -32,6 +32,8 @@ import React, { useMemo } from 'react';
 interface MenuDayProps {
   menu: MenuDefinition;
   onItemChange: (sectionId: string, itemId: string, updatedValues: Partial<MenuPlanItem>) => void;
+  onAddItem: (sectionId: string) => void;
+  onRemoveItem: (sectionId: string, itemId: string) => void;
   categories: Category[];
   rationScaleItems: RationScaleItem[];
   unitsOfMeasure: UnitOfMeasure[];
@@ -42,6 +44,7 @@ interface MealPlanRowProps {
     item: MenuPlanItem;
     sectionId: string;
     onItemChange: MenuDayProps['onItemChange'];
+    onRemoveItem: MenuDayProps['onRemoveItem'];
     categories: Category[];
     rationScaleItems: RationScaleItem[];
     unitsOfMeasure: UnitOfMeasure[];
@@ -49,7 +52,7 @@ interface MealPlanRowProps {
 }
 
 
-const MealPlanRow = ({ item, sectionId, onItemChange, categories, rationScaleItems, unitsOfMeasure, dishes }: MealPlanRowProps) => {
+const MealPlanRow = ({ item, sectionId, onItemChange, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes }: MealPlanRowProps) => {
     const getIngredientInfo = (ingredientId: string | null) => {
       if (!ingredientId) return null;
       return rationScaleItems.find(i => i.id === ingredientId);
@@ -72,13 +75,11 @@ const MealPlanRow = ({ item, sectionId, onItemChange, categories, rationScaleIte
         const selectedIngredient = getIngredientInfo(ingredientId);
         onItemChange(sectionId, item.id, { 
             ingredientId: ingredientId,
-            // When ingredient changes, also update the dish to one that uses it if possible, or clear it
             dishId: dishes.find(d => d.ingredients.some(i => i.ingredientId === ingredientId))?.id || null
         });
     }
     
     const handleCategoryChange = (categoryId: string) => {
-        // When category changes, clear the ingredient as it might not be valid anymore
         onItemChange(sectionId, item.id, { mealPlanCategoryId: categoryId, ingredientId: null, dishId: null });
     }
     
@@ -140,7 +141,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange, categories, rationScaleIte
                 <Input defaultValue={item.strength} type="number" onChange={handleStrengthChange} />
             </TableCell>
             <TableCell className="text-right p-2">
-                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onRemoveItem(sectionId, item.id)}>
                     <Trash2 className="h-4 w-4" />
                 </Button>
             </TableCell>
@@ -148,7 +149,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange, categories, rationScaleIte
     )
 }
 
-const MealSectionCard = ({ section, ...props }: { section: MealSection } & Omit<MenuDayProps, 'menu'>) => {
+const MealSectionCard = ({ section, onAddItem, ...props }: { section: MealSection } & Omit<MenuDayProps, 'menu'>) => {
   return (
     <Card>
       <CardHeader>
@@ -159,7 +160,7 @@ const MealSectionCard = ({ section, ...props }: { section: MealSection } & Omit<
               <CardDescription>{section.subTitle}</CardDescription>
             )}
           </div>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" onClick={() => onAddItem(section.id)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Item
           </Button>
@@ -194,8 +195,8 @@ const MealSectionCard = ({ section, ...props }: { section: MealSection } & Omit<
   );
 };
 
-export const MenuDay = ({ menu, onItemChange, categories, rationScaleItems, unitsOfMeasure, dishes }: MenuDayProps) => {
-  const componentProps = { onItemChange, categories, rationScaleItems, unitsOfMeasure, dishes };
+export const MenuDay = ({ menu, onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes }: MenuDayProps) => {
+  const componentProps = { onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes };
   return (
     <div className="space-y-6">
       {menu.sections.map((section) => (
