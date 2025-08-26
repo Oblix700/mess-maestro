@@ -48,14 +48,30 @@ import type { User, Unit } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { users as initialUsers } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { getUnits } from '@/lib/firebase/firestore';
+import { firestore } from '@/lib/firebase/client';
+import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+
+
+async function getUsers(): Promise<User[]> {
+    try {
+        const usersCollection = collection(firestore, 'users');
+        const querySnapshot = await getDocs(usersCollection);
+        const usersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+        return usersData;
+    } catch (error) {
+        console.error("Error fetching users: ", error);
+        return [];
+    }
+}
+
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -65,14 +81,15 @@ export default function UsersPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const unitsData = await getUnits();
+        const [usersData, unitsData] = await Promise.all([getUsers(), getUnits()]);
         unitsData.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
+        setUsers(usersData);
         setUnits(unitsData);
       } catch (error) {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Could not fetch units data.',
+          description: 'Could not fetch data.',
         });
       } finally {
         setIsLoading(false);
@@ -96,40 +113,73 @@ export default function UsersPage() {
     setIsEditDialogOpen(true);
   }
 
-  const handleSaveUser = () => {
+  const handleSaveUser = async () => {
     if (!selectedUser) return;
-
-    // TODO: Replace with real database operations
-    if (users.some(u => u.id === selectedUser.id && selectedUser.id !== (isEditDialogOpen ? selectedUser.id : ''))) {
-        toast({ variant: "destructive", title: "Error", description: "A user with this Service ID already exists." });
+    if (!selectedUser.id || !selectedUser.name) {
+        toast({ variant: "destructive", title: "Error", description: "Service ID and Name are required." });
         return;
     }
+    
+    setIsSubmitting(true);
 
-    if (selectedUser.id && users.some(u => u.id === selectedUser.id)) { 
-        setUsers(users.map((u) => (u.id === selectedUser.id ? selectedUser : u)));
-        toast({ title: "Success", description: "User updated successfully." });
-    } else {
-        const newUser = { ...selectedUser, id: `temp-${Date.now()}` };
-        setUsers([...users, newUser]);
-        toast({ title: "Success", description: "User added successfully." });
+    try {
+        const isEditing = users.some(u => u.id === selectedUser.id);
+        const userDataToSave = { ...selectedUser };
+        // Don't save the document ID inside the document itself
+        if ('id' in userDataToSave && !isEditing) {
+            delete (userDataToSave as Partial<User>).id;
+        }
+
+        if (isEditing) {
+            // Update existing user
+            const userDocRef = doc(firestore, 'users', selectedUser.id);
+            await updateDoc(userDocRef, userDataToSave);
+            setUsers(users.map((u) => (u.id === selectedUser.id ? selectedUser : u)));
+            toast({ title: "Success", description: "User updated successfully." });
+        } else {
+            // Add new user - use the ID field as the document ID
+            const userDocRef = doc(firestore, 'users', selectedUser.id);
+            await addDoc(collection(firestore, 'users'), userDataToSave);
+            setUsers([...users, selectedUser]);
+            toast({ title: "Success", description: "User added successfully." });
+        }
+
+        setIsEditDialogOpen(false);
+        setSelectedUser(null);
+    } catch (error: any) {
+        console.error("Error saving user:", error);
+        toast({ variant: "destructive", title: "Error", description: error.message || "Failed to save user." });
+    } finally {
+        setIsSubmitting(false);
     }
-
-    setIsEditDialogOpen(false);
-    setSelectedUser(null);
   };
 
-  const handleDeleteUser = () => {
+
+  const handleDeleteUser = async () => {
     if (!selectedUser) return;
-    // TODO: Replace with real database operations
-    setUsers(users.filter((u) => u.id !== selectedUser.id));
-    toast({ title: "Success", description: "User deleted successfully." });
-    setIsDeleteDialogOpen(false);
-    setSelectedUser(null);
+    setIsSubmitting(true);
+    try {
+        await deleteDoc(doc(firestore, 'users', selectedUser.id));
+        setUsers(users.filter((u) => u.id !== selectedUser.id));
+        toast({ title: "Success", description: "User deleted successfully." });
+    } catch (error: any) {
+        console.error("Error deleting user: ", error);
+        toast({ variant: "destructive", title: "Error", description: error.message || "Failed to delete user." });
+    } finally {
+        setIsSubmitting(false);
+        setIsDeleteDialogOpen(false);
+        setSelectedUser(null);
+    }
   };
 
   const handleFieldChange = (field: keyof Omit<User, 'id'>, value: any) => {
     if (selectedUser) {
-      setSelectedUser({ ...selectedUser, [field]: value });
+      const updatedUser: User = {...selectedUser, [field]: value };
+      // If role is changed to admin, remove kitchenId
+      if (field === 'role' && value === 'admin') {
+        delete updatedUser.kitchenId;
+      }
+      setSelectedUser(updatedUser);
     }
   };
   
@@ -232,7 +282,7 @@ export default function UsersPage() {
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="id" className="text-right">Service ID</Label>
-                    <Input id="id" value={selectedUser.id} onChange={(e) => setSelectedUser({...selectedUser, id: e.target.value})} className="col-span-3" />
+                    <Input id="id" value={selectedUser.id} onChange={(e) => setSelectedUser({...selectedUser, id: e.target.value})} className="col-span-3" disabled={users.some(u => u.id === selectedUser.id)} />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="role" className="text-right">Role</Label>
@@ -264,8 +314,10 @@ export default function UsersPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveUser}>Save Changes</Button>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleSaveUser} disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -283,12 +335,13 @@ export default function UsersPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteUser}
+              disabled={isSubmitting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {isSubmitting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, XCircle, Loader2, Database } from 'lucide-react';
 import { firestore } from '@/lib/firebase/client';
 import { collection, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
-import { units, categories, unitsOfMeasure, suppliers, ingredients, dishes, orders } from '@/lib/data';
+import { units, categories, unitsOfMeasure, suppliers, ingredients, dishes, orders, users } from '@/lib/data';
 
 
 export default function CheckStatusPage() {
@@ -105,6 +105,11 @@ export default function CheckStatusPage() {
 
         orders.forEach(item => {
             const docRef = doc(collection(firestore, 'orders'), item.id);
+            batch.set(docRef, item);
+        });
+
+        users.forEach(item => {
+            const docRef = doc(collection(firestore, 'users'), item.id);
             batch.set(docRef, item);
         });
 
