@@ -1,7 +1,8 @@
 
-import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+
+import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 import { firestore } from './client';
-import type { Category, UnitOfMeasure, Region, Supplier, Unit, Ingredient, Dish, Order, MenuDefinition, RationScaleItem } from '@/lib/types';
+import type { Category, UnitOfMeasure, Region, Supplier, Unit, Ingredient, Dish, Order, MenuDefinition, RationScaleItem, MonthlyStrength } from '@/lib/types';
 
 /**
  * Fetches all categories from the Firestore database.
@@ -173,4 +174,42 @@ export async function getMenuCycle(day: number): Promise<MenuDefinition | null> 
     console.error(`Error fetching menu for day ${day}:`, error);
     throw error;
   }
+}
+
+/**
+ * Fetches the strength data for a specific unit and month from Firestore.
+ * @param unitId The ID of the unit.
+ * @param year The year.
+ * @param month The month (0-11).
+ * @returns A promise that resolves to the monthly strength data or null if not found.
+ */
+export async function getStrengthForMonth(unitId: string, year: number, month: number): Promise<MonthlyStrength | null> {
+    const docId = `${unitId}_${year}_${month}`;
+    try {
+        const strengthDocRef = doc(firestore, 'strengths', docId);
+        const docSnap = await getDoc(strengthDocRef);
+        if (docSnap.exists()) {
+            return docSnap.data() as MonthlyStrength;
+        }
+        return null;
+    } catch (error) {
+        console.error(`Error fetching strength data for ${docId}:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Saves the strength data for a specific unit and month to Firestore.
+ * @param data The monthly strength data to save.
+ * @returns A promise that resolves when the save is complete.
+ */
+export async function saveStrengthForMonth(data: MonthlyStrength): Promise<void> {
+    const docId = `${data.unitId}_${data.year}_${data.month}`;
+    try {
+        const strengthDocRef = doc(firestore, 'strengths', docId);
+        await setDoc(strengthDocRef, data, { merge: true });
+    } catch (error) {
+        console.error(`Error saving strength data for ${docId}:`, error);
+        throw error;
+    }
 }

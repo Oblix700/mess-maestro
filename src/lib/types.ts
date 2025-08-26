@@ -1,5 +1,6 @@
 
 
+
 export interface Category {
   id: string;
   name: string;
@@ -104,4 +105,23 @@ export interface Supplier {
     phone: string;
     email: string;
     regions: string[];
+}
+
+export interface DailyStrength {
+    breakfast: number;
+    lunch: number;
+    supper: number;
+    lunchPacks: number;
+    scaleM: number;
+    deployment: number;
+}
+
+export interface MonthlyStrength {
+    id: string; // Format: {unitId}_{year}_{month} e.g., "16_2024_7"
+    unitId: string;
+    year: number;
+    month: number; // 0-11
+    strengths: {
+        [day: number]: DailyStrength; // day is 1-31
+    };
 }

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -27,76 +27,125 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getDaysInMonth, format } from 'date-fns';
-import { RotateCcw } from 'lucide-react';
+import { Loader2, RotateCcw } from 'lucide-react';
+import { getUnits, getStrengthForMonth, saveStrengthForMonth } from '@/lib/firebase/firestore';
+import type { Unit, MonthlyStrength, DailyStrength } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
 const months = Array.from({ length: 12 }, (_, i) => i);
 
-interface StrengthData {
-  [key: string]: {
-    breakfast: number;
-    lunch: number;
-    supper: number;
-    lunchPacks: number;
-    scaleM: number;
-    deployment: number;
-  };
-}
-
-const generateInitialDataForMonth = (year: number, month: number): StrengthData => {
-    const data: StrengthData = {};
-    const daysInMonth = getDaysInMonth(new Date(year, month));
-    for (let day = 1; day <= daysInMonth; day++) {
-        const key = format(new Date(year, month, day), 'yyyy-MM-dd');
-        data[key] = {
-            breakfast: 100,
-            lunch: 100,
-            supper: 100,
-            lunchPacks: 0,
-            scaleM: 0,
-            deployment: 0,
-        };
-    }
-    return data;
-}
+const generateInitialStrengthsForMonth = (year: number, month: number): { [day: number]: DailyStrength } => {
+  const data: { [day: number]: DailyStrength } = {};
+  const daysInMonth = getDaysInMonth(new Date(year, month));
+  for (let day = 1; day <= daysInMonth; day++) {
+    data[day] = {
+      breakfast: 100,
+      lunch: 100,
+      supper: 100,
+      lunchPacks: 0,
+      scaleM: 0,
+      deployment: 0,
+    };
+  }
+  return data;
+};
 
 export default function StrengthPlannerPage() {
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [selectedUnitId, setSelectedUnitId] = useState<string>('');
   const [year, setYear] = useState(currentYear);
   const [month, setMonth] = useState(new Date().getMonth());
-  const [strengths, setStrengths] = useState<StrengthData>(() => generateInitialDataForMonth(currentYear, new Date().getMonth()));
+  const [monthlyStrength, setMonthlyStrength] = useState<MonthlyStrength | null>(null);
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchUnits = async () => {
+      const unitsData = await getUnits();
+      unitsData.sort((a, b) => a.name.localeCompare(b.name));
+      setUnits(unitsData);
+      if (unitsData.length > 0) {
+        setSelectedUnitId(unitsData[0].id);
+      }
+    };
+    fetchUnits();
+  }, []);
+  
+  const fetchStrengths = useCallback(async () => {
+    if (!selectedUnitId) return;
+    setIsLoading(true);
+    try {
+      const data = await getStrengthForMonth(selectedUnitId, year, month);
+      if (data) {
+        setMonthlyStrength(data);
+      } else {
+        setMonthlyStrength({
+          id: `${selectedUnitId}_${year}_${month}`,
+          unitId: selectedUnitId,
+          year,
+          month,
+          strengths: generateInitialStrengthsForMonth(year, month),
+        });
+      }
+    } catch (error) {
+        console.error("Failed to fetch strength data", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch strength data.'})
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedUnitId, year, month, toast]);
+
+  useEffect(() => {
+    fetchStrengths();
+  }, [fetchStrengths]);
 
   const daysInSelectedMonth = useMemo(() => {
     const date = new Date(year, month);
     return Array.from({ length: getDaysInMonth(date) }, (_, i) => i + 1);
   }, [year, month]);
 
-  // Regenerate strengths when year or month changes
-  React.useEffect(() => {
-    setStrengths(generateInitialDataForMonth(year, month));
-  }, [year, month]);
+  const handleStrengthChange = (day: number, mealType: keyof DailyStrength, value: string) => {
+    if (!monthlyStrength) return;
 
-  const handleStrengthChange = (day: number, mealType: keyof StrengthData[''], value: string) => {
-    const key = format(new Date(year, month, day), 'yyyy-MM-dd');
-    const numericValue = Number(value);
-    setStrengths(prev => ({
-      ...prev,
-      [key]: {
-        ...(prev[key] || generateInitialDataForMonth(year, month)[key]), // Ensure key exists
-        [mealType]: isNaN(numericValue) ? 0 : numericValue,
-      },
-    }));
+    const numericValue = value === '' ? 0 : Number(value);
+    if (isNaN(numericValue)) return;
+    
+    const newStrengths = { ...monthlyStrength.strengths };
+    if (!newStrengths[day]) {
+      newStrengths[day] = generateInitialStrengthsForMonth(year, month)[day];
+    }
+    newStrengths[day] = { ...newStrengths[day], [mealType]: numericValue };
+
+    setMonthlyStrength({ ...monthlyStrength, strengths: newStrengths });
   };
   
-  const getStrengthValue = (day: number, mealType: keyof StrengthData['']) => {
-    const key = format(new Date(year, month, day), 'yyyy-MM-dd');
-    return strengths[key]?.[mealType] ?? (mealType.includes('Pack') || mealType.includes('Scale') || mealType.includes('Deploy') ? 0 : 100);
+  const getStrengthValue = (day: number, mealType: keyof DailyStrength) => {
+    return monthlyStrength?.strengths[day]?.[mealType] ?? '';
   }
 
   const handleClearAll = () => {
-    setStrengths(generateInitialDataForMonth(year, month));
+    if (!monthlyStrength) return;
+    setMonthlyStrength({ ...monthlyStrength, strengths: generateInitialStrengthsForMonth(year, month) });
   };
-
+  
+  const handleSaveChanges = async () => {
+    if (!monthlyStrength) return;
+    setIsSaving(true);
+    try {
+        await saveStrengthForMonth(monthlyStrength);
+        toast({ title: 'Success', description: 'Strength plan saved successfully.' });
+    } catch(error) {
+        console.error("Failed to save strength data", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not save strength plan.'})
+    } finally {
+        setIsSaving(false);
+    }
+  };
 
   return (
     <Card>
@@ -109,6 +158,14 @@ export default function StrengthPlannerPage() {
                 </CardDescription>
             </div>
             <div className="flex items-center gap-2">
+                 <Select value={selectedUnitId} onValueChange={setSelectedUnitId} disabled={units.length === 0}>
+                    <SelectTrigger className="w-[220px]">
+                        <SelectValue placeholder="Select Unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {units.map(u => <SelectItem key={u.id} value={u.id}>{`${u.name} - ${u.mess}`}</SelectItem>)}
+                    </SelectContent>
+                </Select>
                  <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
                     <SelectTrigger className="w-[120px]">
                         <SelectValue placeholder="Select Year" />
@@ -127,11 +184,14 @@ export default function StrengthPlannerPage() {
                         ))}
                     </SelectContent>
                 </Select>
-                <Button variant="outline" size="sm" onClick={handleClearAll} className="gap-1">
+                <Button variant="outline" size="sm" onClick={handleClearAll} className="gap-1" disabled={isLoading || isSaving}>
                     <RotateCcw className="h-4 w-4" />
-                    Clear All
+                    Reset
                 </Button>
-                <Button>Save Changes</Button>
+                <Button onClick={handleSaveChanges} disabled={isLoading || isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
             </div>
         </div>
       </CardHeader>
@@ -151,7 +211,20 @@ export default function StrengthPlannerPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {daysInSelectedMonth.map(day => {
+                    {isLoading ? (
+                      Array.from({ length: 10 }).map((_, i) => (
+                        <TableRow key={i}>
+                          <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                        </TableRow>
+                      ))
+                    ) : daysInSelectedMonth.map(day => {
                         const date = new Date(year, month, day);
                         return (
                             <TableRow key={day}>
