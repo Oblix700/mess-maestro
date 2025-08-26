@@ -74,44 +74,38 @@ export default function CheckStatusPage() {
         const batch = writeBatch(firestore);
 
         // Seed Units
-        const unitsCollection = collection(firestore, 'units');
         units.forEach(unit => {
-            const docRef = doc(unitsCollection); // Auto-generate ID
+            const docRef = doc(collection(firestore, 'units'), unit.id);
             batch.set(docRef, unit);
         });
         
         // Seed Categories
-        const categoriesCollection = collection(firestore, 'categories');
         categories.forEach(category => {
-            const docRef = doc(categoriesCollection, category.id);
+            const docRef = doc(collection(firestore, 'categories'), category.id);
             batch.set(docRef, category);
         });
 
         // Seed UOM
-        const uomCollection = collection(firestore, 'unitsOfMeasure');
         unitsOfMeasure.forEach(uom => {
-            const docRef = doc(uomCollection, uom.id);
+            const docRef = doc(collection(firestore, 'unitsOfMeasure'), uom.id);
             batch.set(docRef, uom);
         });
         
         // Seed Suppliers
-        const suppliersCollection = collection(firestore, 'suppliers');
         suppliers.forEach(supplier => {
-            const docRef = doc(suppliersCollection, supplier.id);
+            const docRef = doc(collection(firestore, 'suppliers'), supplier.id);
             batch.set(docRef, supplier);
         });
         
         // Seed Ingredients
-        const ingredientsCollection = collection(firestore, 'ingredients');
         ingredients.forEach(ingredient => {
-            const docRef = doc(ingredientsCollection, ingredient.id);
+            const docRef = doc(collection(firestore, 'ingredients'), ingredient.id);
             batch.set(docRef, ingredient);
         });
 
         // Seed Dishes
-        const dishesCollection = collection(firestore, 'dishes');
         dishes.forEach(dish => {
-            const docRef = doc(dishesCollection, dish.id);
+            const docRef = doc(collection(firestore, 'dishes'), dish.id);
             batch.set(docRef, dish);
         });
 
