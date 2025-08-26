@@ -16,8 +16,8 @@ export default function DashboardLayout({
         </Sidebar>
         <div className="flex flex-col flex-1 sm:pl-14 transition-[padding-left] ease-in-out duration-200 group-data-[state=expanded]/sidebar-wrapper:sm:pl-64">
           <Header />
-          <main className="overflow-auto p-4 sm:p-6 sm:pt-4">
-            <div className="mx-auto w-full max-w-none">{children}</div>
+          <main className="p-4 sm:p-6 sm:pt-4">
+            <div className="w-full">{children}</div>
           </main>
         </div>
       </div>
