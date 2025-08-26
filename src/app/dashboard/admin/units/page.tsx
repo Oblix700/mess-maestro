@@ -75,6 +75,9 @@ export default function UnitsPage() {
 
         const unitsData = unitsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Unit));
         const suppliersData = suppliersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
+        
+        // Sort units by ID numerically
+        unitsData.sort((a, b) => parseInt(a.id!) - parseInt(b.id!));
 
         setUnits(unitsData);
         setSuppliers(suppliersData);
@@ -122,7 +125,9 @@ export default function UnitsPage() {
             const unitDocRef = doc(firestore, 'units', selectedUnit.id);
             const { id, ...unitData } = selectedUnit;
             await updateDoc(unitDocRef, unitData);
-            setUnits(units.map((u) => (u.id === selectedUnit.id ? selectedUnit : u)));
+            const updatedUnits = units.map((u) => (u.id === selectedUnit.id ? selectedUnit : u));
+            updatedUnits.sort((a, b) => parseInt(a.id!) - parseInt(b.id!));
+            setUnits(updatedUnits);
             toast({ title: "Success", description: "Unit updated successfully." });
         } catch (error) {
             console.error("Error updating unit: ", error);
@@ -132,7 +137,9 @@ export default function UnitsPage() {
         try {
             const { id, ...newUnitData } = selectedUnit;
             const docRef = await addDoc(collection(firestore, 'units'), newUnitData);
-            setUnits([...units, { id: docRef.id, ...newUnitData }]);
+            const updatedUnits = [...units, { id: docRef.id, ...newUnitData }];
+            updatedUnits.sort((a, b) => parseInt(a.id!) - parseInt(b.id!));
+            setUnits(updatedUnits);
             toast({ title: "Success", description: "Unit added successfully." });
         } catch (error) {
             console.error("Error adding unit: ", error);
