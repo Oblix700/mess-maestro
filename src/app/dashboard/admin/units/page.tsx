@@ -135,7 +135,13 @@ export default function UnitsPage() {
             const { id, ...unitData } = selectedUnit;
             await updateDoc(unitDocRef, unitData);
             const updatedUnits = units.map((u) => (u.id === selectedUnit.id ? selectedUnit : u));
-            updatedUnits.sort((a, b) => parseInt(a.id!) - parseInt(b.id!));
+            updatedUnits.sort((a, b) => {
+                const nameA = a.name.toLowerCase();
+                const nameB = b.name.toLowerCase();
+                if (nameA < nameB) return -1;
+                if (nameA > nameB) return 1;
+                return 0;
+            });
             setUnits(updatedUnits);
             toast({ title: "Success", description: "Unit updated successfully." });
         } else {
@@ -143,7 +149,13 @@ export default function UnitsPage() {
             const docRef = await addDoc(collection(firestore, 'units'), newUnitData);
             const finalNewUnit = { id: docRef.id, ...newUnitData };
             const updatedUnits = [...units, finalNewUnit];
-            updatedUnits.sort((a, b) => parseInt(a.id!) - parseInt(b.id!));
+            updatedUnits.sort((a, b) => {
+                const nameA = a.name.toLowerCase();
+                const nameB = b.name.toLowerCase();
+                if (nameA < nameB) return -1;
+                if (nameA > nameB) return 1;
+                return 0;
+            });
             setUnits(updatedUnits);
             toast({ title: "Success", description: "Unit added successfully." });
         }
@@ -398,3 +410,5 @@ export default function UnitsPage() {
     </>
   );
 }
+
+    
