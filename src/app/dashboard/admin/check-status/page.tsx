@@ -190,7 +190,7 @@ export default function CheckStatusPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between p-4 border rounded-lg bg-amber-50 border-amber-200">
+        <div className="flex items-center justify-between p-4 border rounded-lg bg-amber-50 border-amber-200 dark:bg-amber-950/50 dark:border-amber-800">
           <div>
             <h3 className="font-semibold flex items-center gap-2"><Database /> Seed Database</h3>
             <p className="text-sm text-muted-foreground">
@@ -215,10 +215,10 @@ export default function CheckStatusPage() {
             </Alert>
         )}
          {(writeStatus === 'success' || readStatus === 'success' || seedStatus === 'success') && (
-            <Alert variant="default" className="bg-green-50 border-green-200">
+            <Alert variant="default" className="bg-green-50 border-green-200 dark:bg-green-950/50 dark:border-green-800">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertTitle className="text-green-800">Operation Succeeded</AlertTitle>
-                <AlertDescription className="text-green-700">
+                <AlertTitle className="text-green-800 dark:text-green-300">Operation Succeeded</AlertTitle>
+                <AlertDescription className="text-green-700 dark:text-green-400">
                     The requested Firestore operation was successful.
                 </AlertDescription>
             </Alert>
