@@ -25,6 +25,7 @@ const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function MenuPlanningPage() {
   const [selectedDay, setSelectedDay] = useState(1);
+  const [allMenus, setAllMenus] = useState<MenuDefinition[]>([]);
   const [currentMenu, setCurrentMenu] = useState<MenuDefinition | null>(null);
   const [initialMenuJson, setInitialMenuJson] = useState<string>('');
   
@@ -37,58 +38,54 @@ export default function MenuPlanningPage() {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  const fetchMenuData = useCallback(async (day: number) => {
-    setIsLoading(true);
-    try {
-      // Data that needs to be fetched from Firestore
-      const [
-        categoriesData,
-        rationScaleData,
-        uomData,
-        dishesData
-      ] = await Promise.all([
-        getCategories(),
-        getRationScale(),
-        getUoms(),
-        getDishes()
-      ]);
-      
-      setCategories(categoriesData);
-      setRationScaleItems(rationScaleData);
-      setUnitsOfMeasure(uomData);
-      setDishes(dishesData);
+  const fetchSupportingData = useCallback(async () => {
+      setIsLoading(true);
+      try {
+        const [
+          categoriesData,
+          rationScaleData,
+          uomData,
+          dishesData
+        ] = await Promise.all([
+          getCategories(),
+          getRationScale(),
+          getUoms(),
+          getDishes()
+        ]);
+        
+        setCategories(categoriesData);
+        setRationScaleItems(rationScaleData);
+        setUnitsOfMeasure(uomData);
+        setDishes(dishesData);
 
-      // Directly use the imported menuCycle data
-      const menuData = menuCycle.find(m => m.day === day);
-
-      if (menuData) {
-        const menuJson = JSON.stringify(menuData);
-        setCurrentMenu(JSON.parse(menuJson)); // Deep copy to allow modification
-        setInitialMenuJson(menuJson);
-      } else {
-        setCurrentMenu(null);
-        setInitialMenuJson('');
+      } catch (error) {
+        console.error("Error fetching menu data:", error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: `Could not find menu for day ${day}.`,
+          description: "Failed to fetch supporting menu data.",
         });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching menu data:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch supporting menu data.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
+    }, [toast]);
   
   useEffect(() => {
-    fetchMenuData(selectedDay);
-  }, [selectedDay, fetchMenuData]);
+    fetchSupportingData();
+    // Load the initial menu cycle data from the static file
+    const deepCopiedMenuCycle = JSON.parse(JSON.stringify(menuCycle));
+    setAllMenus(deepCopiedMenuCycle);
+  }, [fetchSupportingData]);
+
+  useEffect(() => {
+    if (allMenus.length > 0) {
+      const menuData = allMenus.find(m => m.day === selectedDay);
+      if (menuData) {
+        setCurrentMenu(menuData);
+        setInitialMenuJson(JSON.stringify(menuData));
+      }
+    }
+  }, [selectedDay, allMenus]);
   
 
   const handleDayChange = (day: number) => {
@@ -96,6 +93,13 @@ export default function MenuPlanningPage() {
     setSelectedDay(day);
   };
   
+  const updateMenuState = (newMenu: MenuDefinition) => {
+     setCurrentMenu(newMenu);
+     const newAllMenus = allMenus.map(m => m.day === newMenu.day ? newMenu : m);
+     setAllMenus(newAllMenus);
+  }
+
+
   const handleItemChange = (sectionId: string, itemId: string, updatedValues: Partial<MenuPlanItem>) => {
     if (!currentMenu) return;
 
@@ -105,12 +109,12 @@ export default function MenuPlanningPage() {
       const itemIndex = section.items.findIndex(i => i.id === itemId);
       if (itemIndex > -1) {
         section.items[itemIndex] = { ...section.items[itemIndex], ...updatedValues };
-        setCurrentMenu(newMenu);
+        updateMenuState(newMenu);
       }
     }
   };
 
-  const handleAddItem = (sectionId: string) => {
+  const handleAddItem = (sectionId: string, afterItemId: string) => {
     if (!currentMenu) return;
 
     const newMenu = { ...currentMenu };
@@ -123,8 +127,14 @@ export default function MenuPlanningPage() {
         dishId: null,
         strength: 100,
       };
-      section.items.push(newItem);
-      setCurrentMenu(newMenu);
+
+      if (afterItemId) {
+          const insertAtIndex = section.items.findIndex(item => item.id === afterItemId) + 1;
+          section.items.splice(insertAtIndex, 0, newItem);
+      } else {
+           section.items.push(newItem);
+      }
+      updateMenuState(newMenu);
     }
   };
 
@@ -135,7 +145,7 @@ export default function MenuPlanningPage() {
     const section = newMenu.sections.find(s => s.id === sectionId);
     if (section) {
       section.items = section.items.filter(item => item.id !== itemId);
-      setCurrentMenu(newMenu);
+      updateMenuState(newMenu);
     }
   };
 
@@ -144,6 +154,7 @@ export default function MenuPlanningPage() {
     if (!currentMenu) return;
     setIsSaving(true);
     try {
+      // In a real app, you'd likely save all modified menus, but for now we just save the current one
       const menuDocRef = doc(firestore, 'menuCycle', String(currentMenu.day));
       const cleanedMenu = JSON.parse(JSON.stringify(currentMenu));
       await updateDoc(menuDocRef, cleanedMenu);
@@ -216,7 +227,7 @@ export default function MenuPlanningPage() {
           <TabsTrigger value="deployment">Deployment</TabsTrigger>
         </TabsList>
         <TabsContent value="kitchen_menu">
-            {isLoading ? (
+            {isLoading || !currentMenu ? (
                 <Card>
                     <CardContent className="pt-6 space-y-4">
                         <Skeleton className="h-8 w-1/4" />
@@ -231,16 +242,16 @@ export default function MenuPlanningPage() {
             )}
         </TabsContent>
          <TabsContent value="lunch_packs">
-             {isLoading ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="lunch_packs" />}
+             {isLoading || !currentMenu ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="lunch_packs" />}
         </TabsContent>
          <TabsContent value="sustainment_packs">
-            {isLoading ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="sustainment_packs" />}
+            {isLoading || !currentMenu ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="sustainment_packs" />}
         </TabsContent>
          <TabsContent value="scale_m">
-            {isLoading ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="scale_m" />}
+            {isLoading || !currentMenu ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="scale_m" />}
         </TabsContent>
         <TabsContent value="deployment">
-            {isLoading ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="deployment" />}
+            {isLoading || !currentMenu ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="deployment" />}
         </TabsContent>
       </Tabs>
     </div>

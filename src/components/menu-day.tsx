@@ -36,7 +36,7 @@ const KITCHEN_SECTION_IDS = ['breakfast', 'am_tea', 'luncheon', 'pm_tea', 'dinne
 interface MenuDayProps {
   menu: MenuDefinition;
   onItemChange: (sectionId: string, itemId: string, updatedValues: Partial<MenuPlanItem>) => void;
-  onAddItem: (sectionId: string) => void;
+  onAddItem: (sectionId: string, afterItemId: string) => void;
   onRemoveItem: (sectionId: string, itemId: string) => void;
   categories: Category[];
   rationScaleItems: RationScaleItem[];
@@ -49,6 +49,7 @@ interface MealPlanRowProps {
     item: MenuPlanItem;
     sectionId: string;
     onItemChange: MenuDayProps['onItemChange'];
+    onAddItem: MenuDayProps['onAddItem'];
     onRemoveItem: MenuDayProps['onRemoveItem'];
     categories: Category[];
     rationScaleItems: RationScaleItem[];
@@ -57,7 +58,7 @@ interface MealPlanRowProps {
 }
 
 
-const MealPlanRow = ({ item, sectionId, onItemChange, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes }: MealPlanRowProps) => {
+const MealPlanRow = ({ item, sectionId, onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes }: MealPlanRowProps) => {
     const getIngredientInfo = (ingredientId: string | null) => {
       if (!ingredientId) return null;
       return rationScaleItems.find(i => i.id === ingredientId);
@@ -72,7 +73,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange, onRemoveItem, categories, 
     const uom = ingredient ? getUomName(ingredient.unitOfMeasureId) : '';
   
     const filteredIngredients = useMemo(() => {
-        if (!item.mealPlanCategoryId) return rationScaleItems;
+        if (!item.mealPlanCategoryId) return [];
         return rationScaleItems.filter(i => i.categoryId === item.mealPlanCategoryId);
     }, [item.mealPlanCategoryId, rationScaleItems])
 
@@ -99,6 +100,13 @@ const MealPlanRow = ({ item, sectionId, onItemChange, onRemoveItem, categories, 
 
     return (
         <TableRow>
+            <TableCell className="p-2 w-[40px]">
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => onAddItem(sectionId, item.id)}>
+                        <PlusCircle className="h-4 w-4" />
+                    </Button>
+                </div>
+            </TableCell>
             <TableCell className="p-2">
                  <Select value={item.mealPlanCategoryId || ''} onValueChange={handleCategoryChange}>
                     <SelectTrigger>
@@ -153,7 +161,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange, onRemoveItem, categories, 
     )
 }
 
-const MealSectionCard = ({ section, onAddItem, ...props }: { section: MealSection } & Omit<MenuDayProps, 'menu' | 'filter'>) => {
+const MealSectionCard = ({ section, ...props }: { section: MealSection } & Omit<MenuDayProps, 'menu' | 'filter'>) => {
   return (
     <Card>
       <CardHeader>
@@ -164,36 +172,36 @@ const MealSectionCard = ({ section, onAddItem, ...props }: { section: MealSectio
               <CardDescription>{section.subTitle}</CardDescription>
             )}
           </div>
-          <Button variant="ghost" size="sm" onClick={() => onAddItem(section.id)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Item
-          </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="p-2 w-1/4">Meal Plan</TableHead>
-              <TableHead className="p-2 w-1/4">Main Ingredient</TableHead>
-              <TableHead className="p-2 w-[100px]">Scale</TableHead>
-              <TableHead className="p-2 w-[80px]">UoM</TableHead>
-              <TableHead className="p-2 w-1/6">Dish Name</TableHead>
-              <TableHead className="p-2 w-[120px]">Strength %</TableHead>
-              <TableHead className="p-2 w-[50px]"><span className="sr-only">Actions</span></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {section.items.map((item) => <MealPlanRow key={item.id} item={item} sectionId={section.id} {...props} />)}
-             {section.items.length === 0 && (
+        <div className="relative h-[450px] overflow-auto border rounded-md">
+            <Table>
+            <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-4">
-                        No items added to this section.
-                    </TableCell>
+                <TableHead className="p-2 w-[40px]"><span className="sr-only">Add</span></TableHead>
+                <TableHead className="p-2 w-1/4">Meal Plan</TableHead>
+                <TableHead className="p-2 w-1/4">Main Ingredient</TableHead>
+                <TableHead className="p-2 w-[100px]">Scale</TableHead>
+                <TableHead className="p-2 w-[80px]">UoM</TableHead>
+                <TableHead className="p-2 w-1/6">Dish Name</TableHead>
+                <TableHead className="p-2 w-[120px]">Strength %</TableHead>
+                <TableHead className="p-2 w-[50px]"><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+                {section.items.map((item) => <MealPlanRow key={item.id} item={item} sectionId={section.id} {...props} />)}
+                {section.items.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-4">
+                            No items added to this section.
+                             <Button variant="link" onClick={() => props.onAddItem(section.id, '')}>Add the first item</Button>
+                        </TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
+            </Table>
+        </div>
       </CardContent>
     </Card>
   );
