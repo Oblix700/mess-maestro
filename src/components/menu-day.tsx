@@ -211,6 +211,7 @@ export const MenuDay = ({ menu, onItemChange, onAddItem, onRemoveItem, categorie
   const componentProps = { onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes };
   
   const filteredSections = useMemo(() => {
+    if (!menu) return [];
     if (filter === 'kitchen') {
       return menu.sections.filter(s => KITCHEN_SECTION_IDS.includes(s.id));
     }
