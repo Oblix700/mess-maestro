@@ -29,6 +29,10 @@ import { Input } from './ui/input';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import React, { useMemo } from 'react';
 
+type SectionFilter = 'kitchen' | 'lunch_packs' | 'sustainment_packs' | 'scale_m';
+const KITCHEN_SECTION_IDS = ['breakfast', 'am_tea', 'luncheon', 'pm_tea', 'dinner', 'dining_room', 'kitchen_commodities', 'herbs_spices', 'soup_powders'];
+
+
 interface MenuDayProps {
   menu: MenuDefinition;
   onItemChange: (sectionId: string, itemId: string, updatedValues: Partial<MenuPlanItem>) => void;
@@ -38,6 +42,7 @@ interface MenuDayProps {
   rationScaleItems: RationScaleItem[];
   unitsOfMeasure: UnitOfMeasure[];
   dishes: Dish[];
+  filter: SectionFilter;
 }
 
 interface MealPlanRowProps {
@@ -149,7 +154,7 @@ const MealPlanRow = ({ item, sectionId, onItemChange, onRemoveItem, categories, 
     )
 }
 
-const MealSectionCard = ({ section, onAddItem, ...props }: { section: MealSection } & Omit<MenuDayProps, 'menu'>) => {
+const MealSectionCard = ({ section, onAddItem, ...props }: { section: MealSection } & Omit<MenuDayProps, 'menu' | 'filter'>) => {
   return (
     <Card>
       <CardHeader>
@@ -195,11 +200,19 @@ const MealSectionCard = ({ section, onAddItem, ...props }: { section: MealSectio
   );
 };
 
-export const MenuDay = ({ menu, onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes }: MenuDayProps) => {
+export const MenuDay = ({ menu, onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes, filter }: MenuDayProps) => {
   const componentProps = { onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes };
+  
+  const filteredSections = useMemo(() => {
+    if (filter === 'kitchen') {
+      return menu.sections.filter(s => KITCHEN_SECTION_IDS.includes(s.id));
+    }
+    return menu.sections.filter(s => s.id === filter);
+  }, [menu, filter]);
+
   return (
     <div className="space-y-6">
-      {menu.sections.map((section) => (
+      {filteredSections.map((section) => (
         <MealSectionCard key={section.id} section={section} {...componentProps} />
       ))}
     </div>

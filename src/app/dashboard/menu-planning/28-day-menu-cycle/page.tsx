@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MenuDay } from '@/components/menu-day';
 import type { MenuDefinition, MenuPlanItem, Category, RationScaleItem, UnitOfMeasure, Dish } from '@/lib/types';
 import { getCategories, getDishes, getMenuCycle, getRationScale, getUoms } from '@/lib/firebase/firestore';
@@ -167,6 +168,16 @@ export default function MenuPlanningPage() {
   };
 
   const hasChanges = currentMenu ? JSON.stringify(currentMenu) !== initialMenuJson : false;
+  const menuDayProps = { 
+    menu: currentMenu, 
+    onItemChange: handleItemChange, 
+    onAddItem: handleAddItem,
+    onRemoveItem: handleRemoveItem,
+    categories: categories,
+    rationScaleItems: rationScaleItems,
+    unitsOfMeasure: unitsOfMeasure,
+    dishes: dishes
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -201,32 +212,38 @@ export default function MenuPlanningPage() {
         </CardHeader>
       </Card>
       
-      {isLoading ? (
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <Skeleton className="h-8 w-1/4" />
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-40 w-full" />
-          </CardContent>
-        </Card>
-      ) : currentMenu ? (
-         <MenuDay 
-            menu={currentMenu} 
-            onItemChange={handleItemChange} 
-            onAddItem={handleAddItem}
-            onRemoveItem={handleRemoveItem}
-            categories={categories}
-            rationScaleItems={rationScaleItems}
-            unitsOfMeasure={unitsOfMeasure}
-            dishes={dishes}
-        />
-      ) : (
-        <Card>
-            <CardContent className="pt-6">
-                <p>Could not load menu plan for the selected day.</p>
-            </CardContent>
-        </Card>
-      )}
+      <Tabs defaultValue="kitchen_menu">
+        <TabsList>
+          <TabsTrigger value="kitchen_menu">Kitchen Menu</TabsTrigger>
+          <TabsTrigger value="lunch_packs">Lunch Packs</TabsTrigger>
+          <TabsTrigger value="sustainment_packs">Sustainment Packs</TabsTrigger>
+          <TabsTrigger value="scale_m">Scale M</TabsTrigger>
+        </TabsList>
+        <TabsContent value="kitchen_menu">
+            {isLoading ? (
+                <Card>
+                    <CardContent className="pt-6 space-y-4">
+                        <Skeleton className="h-8 w-1/4" />
+                        <Skeleton className="h-40 w-full" />
+                        <Skeleton className="h-40 w-full" />
+                    </CardContent>
+                </Card>
+            ) : currentMenu ? (
+                <MenuDay {...menuDayProps} filter="kitchen" />
+            ) : (
+                <Card><CardContent className="pt-6"><p>Could not load menu plan for the selected day.</p></CardContent></Card>
+            )}
+        </TabsContent>
+         <TabsContent value="lunch_packs">
+             {isLoading ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="lunch_packs" />}
+        </TabsContent>
+         <TabsContent value="sustainment_packs">
+            {isLoading ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="sustainment_packs" />}
+        </TabsContent>
+         <TabsContent value="scale_m">
+            {isLoading ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="scale_m" />}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
