@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -83,6 +84,15 @@ export default function LoginPage() {
               Login
             </Button>
           </form>
+           <div className="relative my-4">
+              <Separator />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs uppercase text-muted-foreground">
+                Or
+              </span>
+            </div>
+            <Button variant="outline" className="w-full" asChild>
+                <Link href="/dashboard">Login as Guest</Link>
+            </Button>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}
             <Link href="#" className="underline">

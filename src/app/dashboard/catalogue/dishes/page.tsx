@@ -6,22 +6,31 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getDishes } from "@/lib/firebase/firestore";
+import { getCategories, getIngredients, getDishes } from "@/lib/firebase/firestore";
 import { DishesClientTable } from "./dishes-client-table";
 
+
 export default async function DishesPage() {
-  const dishes = await getDishes();
+    const [categories, ingredients, dishes] = await Promise.all([
+        getCategories(),
+        getIngredients(),
+        getDishes()
+    ]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Dishes</CardTitle>
+        <CardTitle>Ingredient to Dish Mapping</CardTitle>
         <CardDescription>
-          Manage your dishes and their variants.
+          Manage which dishes can be prepared with each ingredient. This helps in populating menu plan options.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <DishesClientTable initialDishes={dishes} />
+        <DishesClientTable 
+            initialCategories={categories}
+            initialIngredients={ingredients}
+            initialDishes={dishes}
+        />
       </CardContent>
     </Card>
   );
