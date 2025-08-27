@@ -2,6 +2,7 @@
 
 
 
+
 export interface Category {
   id: string;
   name: string;
@@ -75,7 +76,6 @@ export interface RationScaleItem {
   categoryId: string;
   quantity: number;
   unitOfMeasureId: string;
-  variants: IngredientVariant[];
 }
 
 // Types for the new Menu Plan structure

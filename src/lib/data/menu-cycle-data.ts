@@ -32,7 +32,7 @@ export const menuCycle: MenuDefinition[] = [
           { id: 'b3', mealPlanCategoryId: 'CAT012', ingredientId: 'P216', dishId: null, strength: 100 },
           { id: 'b4', mealPlanCategoryId: 'CAT011', ingredientId: 'P215', dishId: null, strength: 100 },
           { id: 'b5', mealPlanCategoryId: 'CAT007', ingredientId: 'P178', dishId: null, strength: 100 },
-          { id: 'b6', mealPlanCategoryId: 'CAT010', ingredientId: 'P537', dishId: null, strength: 100 },
+          { id: 'b6', mealPlanCategoryId: 'CAT010', ingredientId: 'P212', dishId: null, strength: 100 },
           { id: 'b7', mealPlanCategoryId: 'CAT002', ingredientId: 'P009', dishId: null, strength: 100 },
           { id: 'b8', mealPlanCategoryId: 'CAT001', ingredientId: 'P001', dishId: null, strength: 50 },
           { id: 'b9', mealPlanCategoryId: 'CAT008', ingredientId: 'P186', dishId: null, strength: 100 },
