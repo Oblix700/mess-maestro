@@ -34,10 +34,10 @@ export const menuCycle: MenuDefinition[] = [
           { id: 'b5', mealPlanCategoryId: 'CAT007', ingredientId: 'P178', dishId: null, strength: 100 },
           { id: 'b6', mealPlanCategoryId: 'CAT010', ingredientId: 'P212', dishId: null, strength: 100 },
           { id: 'b7', mealPlanCategoryId: 'CAT002', ingredientId: 'P009', dishId: null, strength: 100 },
-          { id: 'b8', mealPlanCategoryId: 'CAT001', ingredientId: 'P001', dishId: null, strength: 50 },
+          { id: 'b8', mealPlanCategoryId: 'CAT001', ingredientId: 'P001', dishId: 'D001', strength: 50 },
           { id: 'b9', mealPlanCategoryId: 'CAT008', ingredientId: 'P186', dishId: null, strength: 100 },
-          { id: 'b10', mealPlanCategoryId: 'CAT002', ingredientId: 'P022', dishId: null, strength: 100 }, // Assuming Supplementary item is a veg cottage pie
-          { id: 'b11', mealPlanCategoryId: 'CAT005', ingredientId: 'P156', dishId: null, strength: 100 },
+          { id: 'b10', mealPlanCategoryId: 'CAT002', ingredientId: 'P022', dishId: null, strength: 100 },
+          { id: 'b11', mealPlanCategoryId: 'CAT005', ingredientId: 'P152', dishId: null, strength: 100 },
           { id: 'b12', mealPlanCategoryId: 'CAT005', ingredientId: 'P156', dishId: null, strength: 100 },
           { id: 'b13', mealPlanCategoryId: 'CAT016', ingredientId: 'P325', dishId: null, strength: 100 },
           { id: 'b14', mealPlanCategoryId: 'CAT009', ingredientId: 'P210', dishId: null, strength: 100 },
@@ -95,7 +95,7 @@ export const menuCycle: MenuDefinition[] = [
         items: [
             { id: 'd1', mealPlanCategoryId: 'CAT004', ingredientId: 'P106', dishId: null, strength: 100 },
             { id: 'd2', mealPlanCategoryId: 'CAT025', ingredientId: null, dishId: null, strength: 100 },
-            { id: 'd3', mealPlanCategoryId: 'CAT013', ingredientId: 'P226', dishId: null, strength: 100 },
+            { id: 'd3', mealPlanCategoryId: 'CAT013', ingredientId: 'P226', dishId: 'D002', strength: 100 },
             { id: 'd4', mealPlanCategoryId: 'CAT014', ingredientId: 'P260', dishId: null, strength: 100 },
             { id: 'd5', mealPlanCategoryId: 'CAT022', ingredientId: 'P507', dishId: null, strength: 100 },
             { id: 'd6', mealPlanCategoryId: 'CAT025', ingredientId: 'P540', dishId: null, strength: 100 },
@@ -128,7 +128,16 @@ export const menuCycle: MenuDefinition[] = [
       {
         id: 'lunch_packs',
         title: 'Lunch Packs',
-        items: [],
+        items: [
+          { id: 'lp1', mealPlanCategoryId: 'CAT001', ingredientId: 'P001', dishId: null, strength: 100 },
+          { id: 'lp2', mealPlanCategoryId: 'CAT026', ingredientId: null, dishId: null, strength: 100 },
+          { id: 'lp3', mealPlanCategoryId: 'CAT026', ingredientId: null, dishId: null, strength: 100 },
+          { id: 'lp4', mealPlanCategoryId: 'CAT026', ingredientId: null, dishId: null, strength: 100 },
+          { id: 'lp5', mealPlanCategoryId: 'CAT026', ingredientId: null, dishId: null, strength: 100 },
+          { id: 'lp6', mealPlanCategoryId: 'CAT026', ingredientId: null, dishId: null, strength: 100 },
+          { id: 'lp7', mealPlanCategoryId: 'CAT026', ingredientId: null, dishId: null, strength: 100 },
+          { id: 'lp8', mealPlanCategoryId: 'CAT026', ingredientId: null, dishId: null, strength: 100 },
+        ],
       },
       {
         id: 'sustainment_packs',
