@@ -15,6 +15,7 @@ const createEmptySections = (): MenuDefinition['sections'] => [
   { id: 'lunch_packs', title: 'Lunch Packs', items: [] },
   { id: 'sustainment_packs', title: 'Sustainment Packs', items: [] },
   { id: 'scale_m', title: 'Scale M', items: [] },
+  { id: 'deployment', title: 'Deployment', items: [] },
 ];
 
 
@@ -29,7 +30,7 @@ export const menuCycle: MenuDefinition[] = [
         items: [
           { id: 'b1', mealPlanCategoryId: 'CAT015', ingredientId: 'P302', dishId: null, strength: 100 },
           { id: 'b2', mealPlanCategoryId: 'CAT008', ingredientId: 'P193', dishId: null, strength: 100 },
-          { id: 'b3', mealPlanCategoryId: 'CAT012', ingredientId: 'P216', dishId: null, strength: 100 },
+          { id: 'b3', mealPlanCategoryId: 'CAT012', ingredientId: 'P218', dishId: null, strength: 100 },
           { id: 'b4', mealPlanCategoryId: 'CAT011', ingredientId: 'P215', dishId: null, strength: 100 },
           { id: 'b5', mealPlanCategoryId: 'CAT007', ingredientId: 'P178', dishId: null, strength: 100 },
           { id: 'b6', mealPlanCategoryId: 'CAT010', ingredientId: 'P212', dishId: null, strength: 100 },
@@ -58,7 +59,7 @@ export const menuCycle: MenuDefinition[] = [
             { id: 'at6', mealPlanCategoryId: 'CAT006', ingredientId: 'P170', dishId: null, strength: 100 },
             { id: 'at7', mealPlanCategoryId: 'CAT009', ingredientId: 'P208', dishId: null, strength: 100 },
             { id: 'at8', mealPlanCategoryId: 'CAT016', ingredientId: 'P331', dishId: null, strength: 100 },
-            { id: 'at9', mealPlanCategoryId: 'CAT022', ingredientId: 'P506', dishId: null, strength: 100 }, 
+            { id: 'at9', mealPlanCategoryId: 'CAT022', ingredientId: null, dishId: null, strength: 100 },
             { id: 'at10', mealPlanCategoryId: 'CAT016', ingredientId: 'P332', dishId: null, strength: 100 },
         ],
       },
@@ -67,8 +68,8 @@ export const menuCycle: MenuDefinition[] = [
         title: 'Luncheon',
         subTitle: 'Light Meal',
         items: [
-            { id: 'l1', mealPlanCategoryId: 'CAT003', ingredientId: 'P044', dishId: 'D002', strength: 100 },
-            { id: 'l2', mealPlanCategoryId: 'CAT025', ingredientId: 'P541', dishId: null, strength: 100 },
+            { id: 'l1', mealPlanCategoryId: 'CAT003', ingredientId: 'P044', dishId: null, strength: 100 },
+            { id: 'l2', mealPlanCategoryId: 'CAT025', ingredientId: null, dishId: null, strength: 100 },
             { id: 'l3', mealPlanCategoryId: 'CAT013', ingredientId: 'P236', dishId: null, strength: 100 },
             { id: 'l4', mealPlanCategoryId: 'CAT014', ingredientId: 'P253', dishId: null, strength: 100 },
             { id: 'l5', mealPlanCategoryId: 'CAT022', ingredientId: 'P498', dishId: null, strength: 100 },
@@ -93,8 +94,8 @@ export const menuCycle: MenuDefinition[] = [
         title: 'Dinner',
         subTitle: 'Main Meal',
         items: [
-            { id: 'd1', mealPlanCategoryId: 'CAT004', ingredientId: 'P106', dishId: 'D003', strength: 100 },
-            { id: 'd2', mealPlanCategoryId: 'CAT025', ingredientId: 'P542', dishId: null, strength: 100 },
+            { id: 'd1', mealPlanCategoryId: 'CAT004', ingredientId: 'P106', dishId: null, strength: 100 },
+            { id: 'd2', mealPlanCategoryId: 'CAT025', ingredientId: null, dishId: null, strength: 100 },
             { id: 'd3', mealPlanCategoryId: 'CAT013', ingredientId: 'P226', dishId: null, strength: 100 },
             { id: 'd4', mealPlanCategoryId: 'CAT014', ingredientId: 'P260', dishId: null, strength: 100 },
             { id: 'd5', mealPlanCategoryId: 'CAT022', ingredientId: 'P507', dishId: null, strength: 100 },
@@ -150,9 +151,14 @@ export const menuCycle: MenuDefinition[] = [
         id: 'scale_m',
         title: 'Scale M',
         items: [
-             { id: 'sm1', mealPlanCategoryId: 'CAT028', ingredientId: 'P002', dishId: null, strength: 100 },
+             { id: 'sm1', mealPlanCategoryId: 'CAT001', ingredientId: 'P002', dishId: null, strength: 100 },
         ],
       },
+      {
+        id: 'deployment',
+        title: 'Deployment',
+        items: [],
+      }
     ],
   },
   { day: 2, sections: createEmptySections() },
