@@ -65,22 +65,15 @@ const menuItems = [
     ],
   },
   {
-    href: "/dashboard/menu-cycle-planning",
-    label: "Menu Cycle Planning",
+    href: "/dashboard/menu-planning",
+    label: "Menu Planning",
     icon: RotateCcw,
     subItems: [
-        { href: "/dashboard/menu-planning/28-day-menu-cycle", label: "28-Day Cycle Menu", icon: BookCheck },
-        { href: "/dashboard/menu-planning/28-day-shopping-list", label: "28-Day Shopping List", icon: List },
-    ],
-  },
-  {
-    href: "/dashboard/monthly-planner",
-    label: "Monthly Planner",
-    icon: CalendarDays,
-    subItems: [
-        { href: "/dashboard/menu-planning/calendar", label: "Year Calendar", icon: CalendarSearch },
+        { href: "/dashboard/menu-planning", label: "28-Day Cycle Overview", icon: FileText },
+        { href: "/dashboard/menu-planning/28-day-menu-cycle", label: "Edit 28-Day Cycle", icon: BookCheck },
+        { href: "/dashboard/menu-planning/28-day-shopping-list", label: "Cycle Shopping List", icon: List },
         { href: "/dashboard/menu-planning/strength-planner", label: "Strength Planner", icon: Percent },
-        { href: "/dashboard/menu-planning", label: "Monthly Menus", icon: FileText },
+        { href: "/dashboard/menu-planning/calendar", label: "Year Calendar", icon: CalendarSearch },
         { href: "/dashboard/menu-planning/monthly-shopping-list", label: "Monthly Shopping List", icon: List },
     ],
   },
@@ -127,6 +120,16 @@ const menuItems = [
 export function SidebarNav() {
   const pathname = usePathname();
 
+  const isSubItemActive = (item: any) => {
+    if (item.href === '/dashboard/menu-planning') {
+      return pathname.startsWith('/dashboard/menu-planning')
+    }
+    if (item.subItems) {
+      return item.subItems.some((subItem: any) => pathname.startsWith(subItem.href));
+    }
+    return pathname.startsWith(item.href);
+  };
+  
   return (
     <div className="flex-1 overflow-auto">
         <div className="flex h-16 items-center justify-center border-b border-sidebar-border">
@@ -138,7 +141,7 @@ export function SidebarNav() {
       <SidebarMenu className="p-2">
         {menuItems.map((item) =>
           item.subItems ? (
-            <Collapsible key={item.href} defaultOpen={pathname.startsWith(item.href)}>
+            <Collapsible key={item.href} defaultOpen={isSubItemActive(item)}>
               <SidebarMenuItem>
                 <CollapsibleTrigger asChild>
                   <Button
