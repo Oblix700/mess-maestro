@@ -1,4 +1,22 @@
+
 import type { MenuDefinition } from '../types';
+
+// Helper to create empty sections for a day
+const createEmptySections = (): MenuDefinition['sections'] => [
+  { id: 'breakfast', title: 'Breakfast', items: [] },
+  { id: 'am_tea', title: 'AM Tea', items: [] },
+  { id: 'luncheon', title: 'Luncheon', subTitle: 'Light Meal', items: [] },
+  { id: 'pm_tea', title: 'PM Tea', items: [] },
+  { id: 'dinner', title: 'Dinner', subTitle: 'Main Meal', items: [] },
+  { id: 'dining_room', title: 'Dining Room Commodities', items: [] },
+  { id: 'kitchen_commodities', title: 'Kitchen Commodities', items: [] },
+  { id: 'herbs_spices', title: 'Herbs and Spices', items: [] },
+  { id: 'soup_powders', title: 'Soup Powders', items: [] },
+  { id: 'lunch_packs', title: 'Lunch Packs', items: [] },
+  { id: 'sustainment_packs', title: 'Sustainment Packs', items: [] },
+  { id: 'scale_m', title: 'Scale M', items: [] },
+];
+
 
 // Placeholder data for Menu 1, based on the provided image and text.
 export const menuCycle: MenuDefinition[] = [
@@ -126,37 +144,31 @@ export const menuCycle: MenuDefinition[] = [
   },
   // Add other 27 days here...
   // For brevity, we'll just add a few more days as examples
-  {
-    day: 2,
-    sections: [ { id: 'breakfast', title: 'Breakfast', items: [] }, { id: 'luncheon', title: 'Luncheon', items: [] }, { id: 'dinner', title: 'Dinner', items: [] } ]
-  },
-  {
-    day: 3,
-    sections: [ { id: 'breakfast', title: 'Breakfast', items: [] }, { id: 'luncheon', title: 'Luncheon', items: [] }, { id: 'dinner', title: 'Dinner', items: [] } ]
-  },
-  { day: 4, sections: [] },
-  { day: 5, sections: [] },
-  { day: 6, sections: [] },
-  { day: 7, sections: [] },
-  { day: 8, sections: [] },
-  { day: 9, sections: [] },
-  { day: 10, sections: [] },
-  { day: 11, sections: [] },
-  { day: 12, sections: [] },
-  { day: 13, sections: [] },
-  { day: 14, sections: [] },
-  { day: 15, sections: [] },
-  { day: 16, sections: [] },
-  { day: 17, sections: [] },
-  { day: 18, sections: [] },
-  { day: 19, sections: [] },
-  { day: 20, sections: [] },
-  { day: 21, sections: [] },
-  { day: 22, sections: [] },
-  { day: 23, sections: [] },
-  { day: 24, sections: [] },
-  { day: 25, sections: [] },
-  { day: 26, sections: [] },
-  { day: 27, sections: [] },
-  { day: 28, sections: [] },
+  { day: 2, sections: createEmptySections() },
+  { day: 3, sections: createEmptySections() },
+  { day: 4, sections: createEmptySections() },
+  { day: 5, sections: createEmptySections() },
+  { day: 6, sections: createEmptySections() },
+  { day: 7, sections: createEmptySections() },
+  { day: 8, sections: createEmptySections() },
+  { day: 9, sections: createEmptySections() },
+  { day: 10, sections: createEmptySections() },
+  { day: 11, sections: createEmptySections() },
+  { day: 12, sections: createEmptySections() },
+  { day: 13, sections: createEmptySections() },
+  { day: 14, sections: createEmptySections() },
+  { day: 15, sections: createEmptySections() },
+  { day: 16, sections: createEmptySections() },
+  { day: 17, sections: createEmptySections() },
+  { day: 18, sections: createEmptySections() },
+  { day: 19, sections: createEmptySections() },
+  { day: 20, sections: createEmptySections() },
+  { day: 21, sections: createEmptySections() },
+  { day: 22, sections: createEmptySections() },
+  { day: 23, sections: createEmptySections() },
+  { day: 24, sections: createEmptySections() },
+  { day: 25, sections: createEmptySections() },
+  { day: 26, sections: createEmptySections() },
+  { day: 27, sections: createEmptySections() },
+  { day: 28, sections: createEmptySections() },
 ];
