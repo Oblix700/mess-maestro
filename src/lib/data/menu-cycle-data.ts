@@ -1,27 +1,41 @@
 
 import type { MenuDefinition } from '../types';
 
-// Helper to create empty sections for a day
-const createEmptySections = (): MenuDefinition['sections'] => [
-  { id: 'breakfast', title: 'Breakfast', items: [] },
-  { id: 'am_tea', title: 'AM Tea', items: [] },
-  { id: 'luncheon', title: 'Luncheon', subTitle: 'Light Meal', items: [] },
-  { id: 'pm_tea', title: 'PM Tea', items: [] },
-  { id: 'dinner', title: 'Dinner', subTitle: 'Main Meal', items: [] },
-  { id: 'dining_room', title: 'Dining Room Commodities', items: [] },
-  { id: 'kitchen_commodities', title: 'Kitchen Commodities', items: [] },
-  { id: 'herbs_spices', title: 'Herbs and Spices', items: [] },
-  { id: 'soup_powders', title: 'Soup Powders', items: [] },
-  { id: 'lunch_packs', title: 'Lunch Packs', items: [] },
-  { id: 'sustainment_packs', title: 'Sustainment Packs', items: [] },
-  { id: 'scale_m', title: 'Scale M', items: [] },
-  { id: 'deployment', title: 'Deployment', items: [] },
+const createEmptyMenuPlanItem = (i: number) => ({
+  id: `item_${Date.now()}_${i}_${Math.random()}`,
+  mealPlanCategoryId: '',
+  ingredientId: null,
+  dishId: null,
+  strength: 100,
+});
+
+// Helper to create empty sections with 10 placeholder rows
+const createSectionsWithPlaceholders = (): MenuDefinition['sections'] => [
+  { id: 'breakfast', title: 'Breakfast', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'am_tea', title: 'AM Tea', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'luncheon', title: 'Luncheon', subTitle: 'Light Meal', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'pm_tea', title: 'PM Tea', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'dinner', title: 'Dinner', subTitle: 'Main Meal', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'dining_room', title: 'Dining Room Commodities', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'kitchen_commodities', title: 'Kitchen Commodities', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'herbs_spices', title: 'Herbs and Spices', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'soup_powders', title: 'Soup Powders', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'lunch_packs', title: 'Lunch Packs', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'sustainment_packs', title: 'Sustainment Packs', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'scale_m', title: 'Scale M', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+  { id: 'deployment', title: 'Deployment', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
 ];
 
 
-// Placeholder data for Menu 1, based on the provided image and text.
-export const menuCycle: MenuDefinition[] = [
-  {
+// Generate the full 28-day menu cycle with placeholders
+export const menuCycle: MenuDefinition[] = Array.from({ length: 28 }, (_, i) => ({
+    day: i + 1,
+    sections: createSectionsWithPlaceholders(),
+}));
+
+
+// Overwrite Day 1 data with the specific layout provided previously
+const day1Data = {
     day: 1,
     sections: [
       {
@@ -106,26 +120,10 @@ export const menuCycle: MenuDefinition[] = [
             { id: 'd10', mealPlanCategoryId: 'CAT017', ingredientId: 'P333', dishId: null, strength: 100 },
         ],
       },
-      {
-        id: 'dining_room',
-        title: 'Dining Room Commodities',
-        items: [],
-      },
-      {
-        id: 'kitchen_commodities',
-        title: 'Kitchen Commodities',
-        items: [],
-      },
-      {
-        id: 'herbs_spices',
-        title: 'Herbs and Spices',
-        items: [],
-      },
-      {
-        id: 'soup_powders',
-        title: 'Soup Powders',
-        items: [],
-      },
+      { id: 'dining_room', title: 'Dining Room Commodities', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+      { id: 'kitchen_commodities', title: 'Kitchen Commodities', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+      { id: 'herbs_spices', title: 'Herbs and Spices', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
+      { id: 'soup_powders', title: 'Soup Powders', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
       {
         id: 'lunch_packs',
         title: 'Lunch Packs',
@@ -157,35 +155,13 @@ export const menuCycle: MenuDefinition[] = [
       {
         id: 'deployment',
         title: 'Deployment',
-        items: [],
+        items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)),
       }
     ],
-  },
-  { day: 2, sections: createEmptySections() },
-  { day: 3, sections: createEmptySections() },
-  { day: 4, sections: createEmptySections() },
-  { day: 5, sections: createEmptySections() },
-  { day: 6, sections: createEmptySections() },
-  { day: 7, sections: createEmptySections() },
-  { day: 8, sections: createEmptySections() },
-  { day: 9, sections: createEmptySections() },
-  { day: 10, sections: createEmptySections() },
-  { day: 11, sections: createEmptySections() },
-  { day: 12, sections: createEmptySections() },
-  { day: 13, sections: createEmptySections() },
-  { day: 14, sections: createEmptySections() },
-  { day: 15, sections: createEmptySections() },
-  { day: 16, sections: createEmptySections() },
-  { day: 17, sections: createEmptySections() },
-  { day: 18, sections: createEmptySections() },
-  { day: 19, sections: createEmptySections() },
-  { day: 20, sections: createEmptySections() },
-  { day: 21, sections: createEmptySections() },
-  { day: 22, sections: createEmptySections() },
-  { day: 23, sections: createEmptySections() },
-  { day: 24, sections: createEmptySections() },
-  { day: 25, sections: createEmptySections() },
-  { day: 26, sections: createEmptySections() },
-  { day: 27, sections: createEmptySections() },
-  { day: 28, sections: createEmptySections() },
-];
+};
+
+// Find the index for day 1 and replace it with the detailed data
+const day1Index = menuCycle.findIndex(m => m.day === 1);
+if (day1Index !== -1) {
+    menuCycle[day1Index] = day1Data;
+}
