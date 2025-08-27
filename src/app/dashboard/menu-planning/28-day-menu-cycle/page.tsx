@@ -12,8 +12,8 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MenuDay } from '@/components/menu-day';
-import type { MenuDefinition, MenuPlanItem, Category, RationScaleItem, UnitOfMeasure, Dish } from '@/lib/types';
-import { getCategories, getDishes, getRationScale, getUoms } from '@/lib/firebase/firestore';
+import type { MenuDefinition, MenuPlanItem, Category, RationScaleItem, UnitOfMeasure, Dish, Ingredient } from '@/lib/types';
+import { getCategories, getDishes, getIngredients, getRationScale, getUoms } from '@/lib/firebase/firestore';
 import { menuCycle } from '@/lib/data/menu-cycle-data';
 import { doc, updateDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase/client';
@@ -33,6 +33,7 @@ export default function MenuPlanningPage() {
   const [rationScaleItems, setRationScaleItems] = useState<RationScaleItem[]>([]);
   const [unitsOfMeasure, setUnitsOfMeasure] = useState<UnitOfMeasure[]>([]);
   const [dishes, setDishes] = useState<Dish[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -45,18 +46,21 @@ export default function MenuPlanningPage() {
           categoriesData,
           rationScaleData,
           uomData,
-          dishesData
+          dishesData,
+          ingredientsData,
         ] = await Promise.all([
           getCategories(),
           getRationScale(),
           getUoms(),
-          getDishes()
+          getDishes(),
+          getIngredients(),
         ]);
         
         setCategories(categoriesData);
         setRationScaleItems(rationScaleData);
         setUnitsOfMeasure(uomData);
         setDishes(dishesData);
+        setIngredients(ingredientsData);
 
       } catch (error) {
         console.error("Error fetching menu data:", error);
@@ -184,7 +188,8 @@ export default function MenuPlanningPage() {
     categories: categories,
     rationScaleItems: rationScaleItems,
     unitsOfMeasure: unitsOfMeasure,
-    dishes: dishes
+    dishes: dishes,
+    ingredients: ingredients,
   };
 
   return (

@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { MenuDefinition, MealSection, MenuPlanItem, Category, RationScaleItem, UnitOfMeasure, Dish } from '@/lib/types';
+import type { MenuDefinition, MealSection, MenuPlanItem, Category, RationScaleItem, UnitOfMeasure, Dish, Ingredient } from '@/lib/types';
 import {
   Card,
   CardContent,
@@ -28,6 +28,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import React, { useMemo } from 'react';
+import { getIngredients } from '@/lib/firebase/firestore';
 
 type SectionFilter = 'kitchen' | 'lunch_packs' | 'sustainment_packs' | 'scale_m' | 'deployment';
 const KITCHEN_SECTION_IDS = ['breakfast', 'am_tea', 'luncheon', 'pm_tea', 'dinner', 'dining_room', 'kitchen_commodities', 'herbs_spices', 'soup_powders'];
@@ -42,6 +43,7 @@ interface MenuDayProps {
   rationScaleItems: RationScaleItem[];
   unitsOfMeasure: UnitOfMeasure[];
   dishes: Dish[];
+  ingredients: Ingredient[];
   filter: SectionFilter;
 }
 
@@ -55,10 +57,11 @@ interface MealPlanRowProps {
     rationScaleItems: RationScaleItem[];
     unitsOfMeasure: UnitOfMeasure[];
     dishes: Dish[];
+    ingredients: Ingredient[];
 }
 
 
-const MealPlanRow = ({ item, sectionId, onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes }: MealPlanRowProps) => {
+const MealPlanRow = ({ item, sectionId, onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes, ingredients }: MealPlanRowProps) => {
     const getIngredientInfo = (ingredientId: string | null) => {
       if (!ingredientId) return null;
       return rationScaleItems.find(i => i.id === ingredientId);
@@ -68,14 +71,23 @@ const MealPlanRow = ({ item, sectionId, onItemChange, onAddItem, onRemoveItem, c
         return unitsOfMeasure.find(u => u.id === uomId)?.name || '';
     }
     
-    const ingredient = getIngredientInfo(item.ingredientId);
-    const scale = ingredient?.quantity ?? '';
-    const uom = ingredient ? getUomName(ingredient.unitOfMeasureId) : '';
+    const ingredientRationScale = getIngredientInfo(item.ingredientId);
+    const scale = ingredientRationScale?.quantity ?? '';
+    const uom = ingredientRationScale ? getUomName(ingredientRationScale.unitOfMeasureId) : '';
   
     const filteredIngredients = useMemo(() => {
         if (!item.mealPlanCategoryId) return [];
-        return rationScaleItems.filter(i => i.categoryId === item.mealPlanCategoryId);
+        return rationScaleItems
+          .filter(i => i.categoryId === item.mealPlanCategoryId)
+          .sort((a,b) => a.name.localeCompare(b.name));
     }, [item.mealPlanCategoryId, rationScaleItems])
+
+    const filteredDishes = useMemo(() => {
+      if (!item.ingredientId) return [];
+      const ingredient = ingredients.find(i => i.id === item.ingredientId);
+      if (!ingredient || !ingredient.dishIds) return [];
+      return dishes.filter(d => ingredient.dishIds!.includes(d.id));
+    }, [item.ingredientId, ingredients, dishes]);
 
     const handleIngredientChange = (ingredientId: string) => {
         onItemChange(sectionId, item.id, { 
@@ -138,12 +150,12 @@ const MealPlanRow = ({ item, sectionId, onItemChange, onAddItem, onRemoveItem, c
                 <Input value={uom} readOnly className="bg-muted" />
             </TableCell>
              <TableCell className="p-2">
-                <Select value={item.dishId || ''} onValueChange={handleDishChange}>
+                <Select value={item.dishId || ''} onValueChange={handleDishChange} disabled={!item.ingredientId || filteredDishes.length === 0}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select dish..." />
                     </SelectTrigger>
                     <SelectContent>
-                        {dishes.map(dish => (
+                        {filteredDishes.map(dish => (
                             <SelectItem key={dish.id} value={dish.id}>{dish.name}</SelectItem>
                         ))}
                     </SelectContent>
@@ -207,8 +219,8 @@ const MealSectionCard = ({ section, ...props }: { section: MealSection } & Omit<
   );
 };
 
-export const MenuDay = ({ menu, onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes, filter }: MenuDayProps) => {
-  const componentProps = { onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes };
+export const MenuDay = ({ menu, onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes, ingredients, filter }: MenuDayProps) => {
+  const componentProps = { onItemChange, onAddItem, onRemoveItem, categories, rationScaleItems, unitsOfMeasure, dishes, ingredients };
   
   const filteredSections = useMemo(() => {
     if (!menu) return [];

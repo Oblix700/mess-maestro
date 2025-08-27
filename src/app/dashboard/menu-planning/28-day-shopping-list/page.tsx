@@ -75,6 +75,7 @@ export default function TwentyEightDayShoppingListPage() {
         // Process each day in the menu cycle
         initialMenuCycle.forEach(menuDay => {
           const dayIndex = menuDay.day - 1;
+          if (dayIndex < 0 || dayIndex >= 28) return;
 
           menuDay.sections.forEach(section => {
             section.items.forEach(item => {
@@ -83,6 +84,7 @@ export default function TwentyEightDayShoppingListPage() {
                 const shoppingListItem = shoppingListMap.get(item.ingredientId);
 
                 if (rationScaleItem && shoppingListItem) {
+                  // The core calculation: ration scale quantity adjusted by the menu strength percentage.
                   const requiredAmount = rationScaleItem.quantity * (item.strength / 100);
                   shoppingListItem.dailyTotals[dayIndex] += requiredAmount;
                 }
@@ -117,13 +119,19 @@ export default function TwentyEightDayShoppingListPage() {
   const itemsByCategory = useMemo(() => {
     const grouped: { [key: string]: CalculatedItem[] } = {};
     calculatedList.forEach(item => {
-      if (!grouped[item.categoryId]) {
-        grouped[item.categoryId] = [];
+      const category = categories.find(c => c.id === item.categoryId);
+      const categoryName = category ? category.name : 'Uncategorized';
+      if (!grouped[categoryName]) {
+        grouped[categoryName] = [];
       }
-      grouped[item.categoryId].push(item);
+      grouped[categoryName].push(item);
     });
-    return grouped;
-  }, [calculatedList]);
+    // Sort categories alphabetically
+    return Object.keys(grouped).sort().reduce((obj, key) => { 
+        obj[key] = grouped[key]; 
+        return obj;
+    }, {} as { [key: string]: CalculatedItem[] });
+  }, [calculatedList, categories]);
 
   return (
     <Card>
@@ -138,49 +146,47 @@ export default function TwentyEightDayShoppingListPage() {
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10">
               <TableRow>
-                <TableHead className="sticky left-0 bg-card min-w-[250px]">Ingredient</TableHead>
+                <TableHead className="sticky left-0 bg-card min-w-[250px] z-20">Ingredient</TableHead>
                 <TableHead className="min-w-[80px]">UOM</TableHead>
                 {Array.from({ length: 28 }, (_, i) => (
                   <TableHead key={i} className="text-center min-w-[60px]">{i + 1}</TableHead>
                 ))}
-                <TableHead className="text-right min-w-[100px] sticky right-0 bg-card font-bold">Total</TableHead>
+                <TableHead className="text-right min-w-[100px] sticky right-0 bg-card font-bold z-20">Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 15 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell className="sticky left-0 bg-card"><Skeleton className="h-5 w-4/5" /></TableCell>
+                    <TableCell className="sticky left-0 bg-card z-10"><Skeleton className="h-5 w-4/5" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-full" /></TableCell>
                     {Array.from({ length: 29 }).map((_, j) => (
                        <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>
                     ))}
                   </TableRow>
                 ))
-              ) : categories.map(category => (
-                itemsByCategory[category.id] && (
-                  <React.Fragment key={category.id}>
-                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableCell colSpan={31} className="font-bold text-primary sticky left-0 bg-muted/50">
-                        {category.name}
+              ) : Object.entries(itemsByCategory).map(([categoryName, items]) => (
+                <React.Fragment key={categoryName}>
+                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                    <TableCell colSpan={31} className="font-bold text-primary sticky left-0 bg-muted/50 z-10">
+                      {categoryName}
+                    </TableCell>
+                  </TableRow>
+                  {items.map(item => (
+                    <TableRow key={item.ingredientId}>
+                      <TableCell className="font-medium sticky left-0 bg-card z-10">{item.name}</TableCell>
+                      <TableCell>{item.uom}</TableCell>
+                      {item.dailyTotals.map((total, dayIndex) => (
+                        <TableCell key={dayIndex} className="text-center font-mono text-xs">
+                          {total > 0.0001 ? total.toFixed(3).replace(/\.?0+$/, '') : '-'}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-right font-mono sticky right-0 bg-card font-bold z-10">
+                         {item.total > 0.0001 ? item.total.toFixed(3).replace(/\.?0+$/, '') : ''}
                       </TableCell>
                     </TableRow>
-                    {itemsByCategory[category.id].map(item => (
-                      <TableRow key={item.ingredientId}>
-                        <TableCell className="font-medium sticky left-0 bg-card">{item.name}</TableCell>
-                        <TableCell>{item.uom}</TableCell>
-                        {item.dailyTotals.map((total, dayIndex) => (
-                          <TableCell key={dayIndex} className="text-center font-mono text-xs">
-                            {total > 0 ? total.toFixed(3) : '-'}
-                          </TableCell>
-                        ))}
-                        <TableCell className="text-right font-mono sticky right-0 bg-card font-bold">
-                           {item.total > 0 ? item.total.toFixed(3) : ''}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </React.Fragment>
-                )
+                  ))}
+                </React.Fragment>
               ))}
             </TableBody>
           </Table>
@@ -189,4 +195,3 @@ export default function TwentyEightDayShoppingListPage() {
     </Card>
   );
 }
-
