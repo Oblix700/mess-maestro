@@ -100,12 +100,17 @@ export default function CheckStatusPage() {
         
         ingredients.forEach(item => {
             const docRef = doc(collection(firestore, 'ingredients'), item.id);
-            batch.set(docRef, item);
+            const { variants, dishIds, ...rest } = item;
+            const itemToSave = { ...rest, variants: variants || [], dishIds: dishIds || [] };
+            batch.set(docRef, itemToSave);
         });
         
+        // The rationScaleItems from lib/data is now EnrichedRationScaleItem[]
+        // We need to strip the extra fields before saving to the 'rationScaleItems' collection
         rationScaleItems.forEach(item => {
             const docRef = doc(collection(firestore, 'rationScaleItems'), item.id);
-            batch.set(docRef, item);
+            const { variants, dishIds, ...rationScaleData } = item;
+            batch.set(docRef, rationScaleData);
         });
 
         dishes.forEach(item => {
@@ -227,3 +232,5 @@ export default function CheckStatusPage() {
     </Card>
   );
 }
+
+    

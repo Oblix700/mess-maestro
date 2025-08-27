@@ -1,4 +1,5 @@
 
+
 export interface Category {
   id: string;
   name: string;
@@ -132,3 +133,5 @@ export interface MonthlyStrength {
         [day: number]: DailyStrength; // day is 1-31
     };
 }
+
+    

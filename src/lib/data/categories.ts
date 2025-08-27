@@ -1,6 +1,9 @@
+
 import type { Category } from '@/lib/types';
 
-export const categories: Category[] = [
+// This is the master list of all possible categories.
+// It acts as a source of truth for category details like descriptions.
+const allCategoriesMaster: Category[] = [
     { id: 'CAT001', name: 'BREAKFAST EGG', description: '' },
     { id: 'CAT002', name: 'BREAKFAST PROTEIN RICH FOOD', description: '' },
     { id: 'CAT003', name: 'LUNCH PROTEIN RICH FOOD (Light)', description: '' },
@@ -30,3 +33,11 @@ export const categories: Category[] = [
     { id: 'CAT027', name: 'SUSTAINMENT PACKS', description: '' },
     { id: 'CAT028', name: 'Scale M', description: '' },
 ];
+
+
+// We export the master list directly. The UI will now be responsible for filtering
+// or showing all categories as needed. This ensures that even if a category
+// has no ingredients yet, it can still be managed in the admin UI.
+export const categories: Category[] = allCategoriesMaster;
+
+    
