@@ -71,6 +71,7 @@ const menuItems = [
     subItems: [
         { href: "/dashboard/menu-planning/calendar", label: "Year Planner", icon: CalendarSearch },
         { href: "/dashboard/menu-planning/28-day-menu-cycle", label: "28 Day Cycle Menu", icon: BookCheck },
+        { href: "/dashboard/menu-planning/dishes", label: "Dishes", icon: ChefHat },
         { href: "/dashboard/menu-planning/28-day-shopping-list", label: "28 Day Shopping List", icon: List },
     ],
   },

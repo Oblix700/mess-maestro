@@ -1,10 +1,5 @@
 
-
-
-
-
-
-import { collection, doc, getDoc, getDocs, setDoc, query, where, orderBy } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, query, where, orderBy, updateDoc } from 'firebase/firestore';
 import { firestore } from './client';
 import type { Category, UnitOfMeasure, Region, Supplier, Unit, Ingredient, Dish, Order, MenuDefinition, RationScaleItem, MonthlyStrength, User } from '@/lib/types';
 
@@ -148,6 +143,24 @@ export async function getDishes(): Promise<Dish[]> {
         console.error("Error fetching dishes: ", error);
         return [];
     }
+}
+
+/**
+ * Updates the list of associated dish IDs for a specific ingredient.
+ * @param ingredientId The ID of the ingredient to update.
+ * @param dishIds An array of dish IDs to associate with the ingredient.
+ * @returns A promise that resolves when the update is complete.
+ */
+export async function updateIngredientDishes(ingredientId: string, dishIds: string[]): Promise<void> {
+  try {
+    const ingredientDocRef = doc(firestore, 'ingredients', ingredientId);
+    await updateDoc(ingredientDocRef, {
+      dishIds: dishIds,
+    });
+  } catch (error) {
+    console.error(`Error updating dishes for ingredient ${ingredientId}:`, error);
+    throw error;
+  }
 }
 
 /**

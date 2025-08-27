@@ -1,8 +1,4 @@
 
-
-
-
-
 export interface Category {
   id: string;
   name: string;
@@ -41,6 +37,7 @@ export interface Ingredient {
   name: string;
   categoryId: string;
   variants: IngredientVariant[];
+  dishIds?: string[];
 }
 
 export interface Dish {
