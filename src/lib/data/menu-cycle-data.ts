@@ -10,7 +10,7 @@ const createEmptyMenuPlanItem = (i: number) => ({
 });
 
 // Helper to create empty sections with 10 placeholder rows
-const createSectionsWithPlaceholders = (): MenuDefinition['sections'] => [
+const createPlaceholderSections = (): MenuDefinition['sections'] => [
   { id: 'breakfast', title: 'Breakfast', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
   { id: 'am_tea', title: 'AM Tea', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
   { id: 'luncheon', title: 'Luncheon', subTitle: 'Light Meal', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
@@ -26,16 +26,14 @@ const createSectionsWithPlaceholders = (): MenuDefinition['sections'] => [
   { id: 'deployment', title: 'Deployment', items: Array.from({ length: 10 }, (_, i) => createEmptyMenuPlanItem(i)) },
 ];
 
-
-// Generate the full 28-day menu cycle with placeholders
-export const menuCycle: MenuDefinition[] = Array.from({ length: 28 }, (_, i) => ({
-    day: i + 1,
-    sections: createSectionsWithPlaceholders(),
+// Generate the placeholder menu cycle for days 2-28
+const placeholderMenuCycle: MenuDefinition[] = Array.from({ length: 27 }, (_, i) => ({
+    day: i + 2, // Start from day 2
+    sections: createPlaceholderSections(),
 }));
 
-
-// Overwrite Day 1 data with the specific layout provided previously
-const day1Data = {
+// Day 1 data with the specific layout provided previously
+const day1Data: MenuDefinition = {
     day: 1,
     sections: [
       {
@@ -160,8 +158,5 @@ const day1Data = {
     ],
 };
 
-// Find the index for day 1 and replace it with the detailed data
-const day1Index = menuCycle.findIndex(m => m.day === 1);
-if (day1Index !== -1) {
-    menuCycle[day1Index] = day1Data;
-}
+// Combine day 1 with the rest of the placeholder days
+export const menuCycle: MenuDefinition[] = [day1Data, ...placeholderMenuCycle];

@@ -13,7 +13,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MenuDay } from '@/components/menu-day';
 import type { MenuDefinition, MenuPlanItem, Category, RationScaleItem, UnitOfMeasure, Dish } from '@/lib/types';
-import { getCategories, getDishes, getMenuCycle, getRationScale, getUoms } from '@/lib/firebase/firestore';
+import { getCategories, getDishes, getRationScale, getUoms } from '@/lib/firebase/firestore';
+import { menuCycle } from '@/lib/data/menu-cycle-data';
 import { doc, updateDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -39,14 +40,13 @@ export default function MenuPlanningPage() {
   const fetchMenuData = useCallback(async (day: number) => {
     setIsLoading(true);
     try {
+      // Data that needs to be fetched from Firestore
       const [
-        menuData,
         categoriesData,
         rationScaleData,
         uomData,
         dishesData
       ] = await Promise.all([
-        getMenuCycle(day),
         getCategories(),
         getRationScale(),
         getUoms(),
@@ -58,9 +58,12 @@ export default function MenuPlanningPage() {
       setUnitsOfMeasure(uomData);
       setDishes(dishesData);
 
+      // Directly use the imported menuCycle data
+      const menuData = menuCycle.find(m => m.day === day);
+
       if (menuData) {
         const menuJson = JSON.stringify(menuData);
-        setCurrentMenu(JSON.parse(menuJson));
+        setCurrentMenu(JSON.parse(menuJson)); // Deep copy to allow modification
         setInitialMenuJson(menuJson);
       } else {
         setCurrentMenu(null);
@@ -76,7 +79,7 @@ export default function MenuPlanningPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to fetch menu data.",
+        description: "Failed to fetch supporting menu data.",
       });
     } finally {
       setIsLoading(false);

@@ -77,10 +77,9 @@ const MealPlanRow = ({ item, sectionId, onItemChange, onRemoveItem, categories, 
     }, [item.mealPlanCategoryId, rationScaleItems])
 
     const handleIngredientChange = (ingredientId: string) => {
-        const selectedIngredient = getIngredientInfo(ingredientId);
         onItemChange(sectionId, item.id, { 
             ingredientId: ingredientId,
-            dishId: dishes.find(d => d.ingredients.some(i => i.ingredientId === ingredientId))?.id || null
+            dishId: null // Reset dish when ingredient changes
         });
     }
     
