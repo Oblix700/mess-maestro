@@ -10,13 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MenuDay } from '@/components/menu-day';
 import type { MenuDefinition, MenuPlanItem, Category, RationScaleItem, UnitOfMeasure, Dish } from '@/lib/types';
@@ -25,7 +18,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -95,8 +88,9 @@ export default function MenuPlanningPage() {
   }, [selectedDay, fetchMenuData]);
   
 
-  const handleDayChange = (value: string) => {
-    setSelectedDay(parseInt(value, 10));
+  const handleDayChange = (day: number) => {
+    if (day < 1 || day > 28) return;
+    setSelectedDay(day);
   };
   
   const handleItemChange = (sectionId: string, itemId: string, updatedValues: Partial<MenuPlanItem>) => {
@@ -185,24 +179,22 @@ export default function MenuPlanningPage() {
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <CardTitle>28-Day Menu Cycle</CardTitle>
+              <CardTitle>28-Day Cycle Menu</CardTitle>
               <CardDescription>
                 Select a day to view or edit its menu plan.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-                <Select value={String(selectedDay)} onValueChange={handleDayChange} disabled={isLoading || isSaving}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select a day" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {Array.from({ length: 28 }, (_, i) => (
-                            <SelectItem key={i + 1} value={String(i + 1)}>
-                                Day {i + 1} ({daysOfWeek[i % 7]})
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <Button variant="outline" size="icon" onClick={() => handleDayChange(selectedDay - 1)} disabled={selectedDay === 1 || isLoading || isSaving}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="text-center w-32">
+                    <span className="font-bold">Day {selectedDay}</span>
+                    <p className="text-sm text-muted-foreground">{daysOfWeek[(selectedDay - 1) % 7]}</p>
+                </div>
+                <Button variant="outline" size="icon" onClick={() => handleDayChange(selectedDay + 1)} disabled={selectedDay === 28 || isLoading || isSaving}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
                 <Button onClick={handleSaveChanges} disabled={!hasChanges || isSaving}>
                   {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isSaving ? 'Saving...' : 'Save Changes'}
@@ -218,6 +210,7 @@ export default function MenuPlanningPage() {
           <TabsTrigger value="lunch_packs">Lunch Packs</TabsTrigger>
           <TabsTrigger value="sustainment_packs">Sustainment Packs</TabsTrigger>
           <TabsTrigger value="scale_m">Scale M</TabsTrigger>
+          <TabsTrigger value="deployment">Deployment</TabsTrigger>
         </TabsList>
         <TabsContent value="kitchen_menu">
             {isLoading ? (
@@ -242,6 +235,9 @@ export default function MenuPlanningPage() {
         </TabsContent>
          <TabsContent value="scale_m">
             {isLoading ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="scale_m" />}
+        </TabsContent>
+        <TabsContent value="deployment">
+            {isLoading ? <Skeleton className="h-40 w-full" /> : currentMenu && <MenuDay {...menuDayProps} filter="deployment" />}
         </TabsContent>
       </Tabs>
     </div>

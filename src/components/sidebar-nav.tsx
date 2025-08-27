@@ -66,15 +66,22 @@ const menuItems = [
   },
   {
     href: "/dashboard/menu-planning",
-    label: "Menu Planning",
+    label: "28 Day Menu Planning",
     icon: RotateCcw,
     subItems: [
-        { href: "/dashboard/menu-planning", label: "28-Day Cycle Overview", icon: FileText },
-        { href: "/dashboard/menu-planning/28-day-menu-cycle", label: "Edit 28-Day Cycle", icon: BookCheck },
-        { href: "/dashboard/menu-planning/28-day-shopping-list", label: "Cycle Shopping List", icon: List },
-        { href: "/dashboard/menu-planning/strength-planner", label: "Strength Planner", icon: Percent },
-        { href: "/dashboard/menu-planning/calendar", label: "Year Calendar", icon: CalendarSearch },
-        { href: "/dashboard/menu-planning/monthly-shopping-list", label: "Monthly Shopping List", icon: List },
+        { href: "/dashboard/menu-planning/calendar", label: "Year Planner", icon: CalendarSearch },
+        { href: "/dashboard/menu-planning/28-day-menu-cycle", label: "28 Day Cycle Menu", icon: BookCheck },
+        { href: "/dashboard/menu-planning/28-day-shopping-list", label: "28 Day Shopping List", icon: List },
+    ],
+  },
+  {
+    href: "/dashboard/monthly-planner",
+    label: "Monthly Planner",
+    icon: Calendar,
+    subItems: [
+        { href: "/dashboard/menu-planning/strength-planner", label: "Monthly Strength Planner", icon: Percent },
+        { href: "/dashboard/monthly-planner/menus", label: "Menus", icon: FileText },
+        { href: "/dashboard/monthly-planner/shopping-lists", label: "Shopping lists", icon: List },
     ],
   },
   {
@@ -122,7 +129,10 @@ export function SidebarNav() {
 
   const isSubItemActive = (item: any) => {
     if (item.href === '/dashboard/menu-planning') {
-      return pathname.startsWith('/dashboard/menu-planning')
+      return pathname.startsWith('/dashboard/menu-planning') && !pathname.startsWith('/dashboard/menu-planning/strength-planner')
+    }
+    if (item.href === '/dashboard/monthly-planner') {
+      return pathname.startsWith('/dashboard/monthly-planner') || pathname.startsWith('/dashboard/menu-planning/strength-planner')
     }
     if (item.subItems) {
       return item.subItems.some((subItem: any) => pathname.startsWith(subItem.href));

@@ -29,7 +29,7 @@ import { Input } from './ui/input';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import React, { useMemo } from 'react';
 
-type SectionFilter = 'kitchen' | 'lunch_packs' | 'sustainment_packs' | 'scale_m';
+type SectionFilter = 'kitchen' | 'lunch_packs' | 'sustainment_packs' | 'scale_m' | 'deployment';
 const KITCHEN_SECTION_IDS = ['breakfast', 'am_tea', 'luncheon', 'pm_tea', 'dinner', 'dining_room', 'kitchen_commodities', 'herbs_spices', 'soup_powders'];
 
 
