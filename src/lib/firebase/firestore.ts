@@ -117,8 +117,8 @@ export async function getIngredients(): Promise<Ingredient[]> {
 export async function getRationScale(): Promise<RationScaleItem[]> {
     try {
         const rationScaleCollection = collection(firestore, 'rationScaleItems');
-        const q = query(rationScaleCollection, orderBy('name'));
-        const querySnapshot = await getDocs(q);
+        // This query is no longer ordered by name by default, as grouping will happen on the client
+        const querySnapshot = await getDocs(rationScaleCollection);
         const rationScaleData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RationScaleItem));
         return rationScaleData;
     } catch (error) {
@@ -257,3 +257,5 @@ export async function getUsers(): Promise<User[]> {
         return [];
     }
 }
+
+    
