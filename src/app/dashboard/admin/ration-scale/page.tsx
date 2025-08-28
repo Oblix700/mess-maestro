@@ -55,7 +55,11 @@ export default function RationScalePage() {
           getCategories(),
           getUoms(),
         ]);
-        const rationScaleRows = rationScaleData.map(doc => ({ ...doc, isModified: false }));
+        const rationScaleRows = rationScaleData.map(doc => ({ 
+            ...doc, 
+            quantity: Number(doc.quantity || 0), // Ensure quantity is a number
+            isModified: false 
+        }));
         setItems(rationScaleRows);
         setCategories(categoriesData);
         setUnitsOfMeasure(uomData);
@@ -75,11 +79,17 @@ export default function RationScalePage() {
 
   const handleFieldChange = (itemId: string, field: 'quantity' | 'unitOfMeasureId', value: string | number) => {
     setItems(prevItems =>
-      prevItems.map(item =>
-        item.id === itemId
-          ? { ...item, [field]: value, isModified: true }
-          : item
-      )
+      prevItems.map(item => {
+        if (item.id === itemId) {
+          let newValue = value;
+          if (field === 'quantity') {
+            // Ensure the value from input is treated as a number for state updates
+            newValue = Number(value);
+          }
+          return { ...item, [field]: newValue, isModified: true };
+        }
+        return item;
+      })
     );
   };
 
@@ -97,7 +107,7 @@ export default function RationScalePage() {
       const { isModified, ...itemData } = item;
       const itemRef = doc(firestore, 'rationScaleItems', item.id);
       batch.update(itemRef, {
-        quantity: itemData.quantity,
+        quantity: Number(itemData.quantity), // Ensure quantity is saved as a number
         unitOfMeasureId: itemData.unitOfMeasureId,
       });
     });
@@ -189,8 +199,14 @@ export default function RationScalePage() {
                           <Input
                             type="text"
                             inputMode="decimal"
-                            value={item.quantity}
-                            onChange={(e) => handleFieldChange(item.id, 'quantity', e.target.value.replace(/,/, '.'))}
+                            value={Number.isNaN(item.quantity) ? '' : Number(item.quantity).toFixed(3)}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Allow only numbers and a single decimal point
+                              if (/^\d*\.?\d{0,3}$/.test(value) || value === '') {
+                                handleFieldChange(item.id, 'quantity', value);
+                              }
+                            }}
                             className="w-full"
                           />
                         </TableCell>
