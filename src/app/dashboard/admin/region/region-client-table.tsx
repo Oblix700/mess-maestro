@@ -28,26 +28,39 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import React, { useState } from 'react';
+import { Loader2, Pencil, PlusCircle, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import type { Region } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { firestore } from '@/lib/firebase/client';
-import { collection, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteDoc, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface RegionClientTableProps {
-    initialRegions: Region[];
-}
-
-export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
-  const [regions, setRegions] = useState<Region[]>(initialRegions);
-  const [isLoading, setIsLoading] = useState(false);
+export function RegionClientTable() {
+  const [regions, setRegions] = useState<Region[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const q = query(collection(firestore, 'regions'), orderBy('name'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const regionsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Region));
+        setRegions(regionsData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching regions in real-time: ", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to load regions."});
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
 
   const handleEditClick = (region: Region) => {
     setSelectedRegion(region);
@@ -69,52 +82,43 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
         toast({ variant: "destructive", title: "Validation Error", description: "Region name is required." });
         return;
     }
-    setIsLoading(true);
+    setIsSubmitting(true);
 
-    if (selectedRegion.id) {
-        // Update existing region
-        try {
-            const regionDocRef = doc(firestore, 'regions', selectedRegion.id);
-            const { id, ...regionData } = selectedRegion;
-            await updateDoc(regionDocRef, regionData);
-            setRegions(regions.map((r) => (r.id === selectedRegion.id ? selectedRegion : r)));
-            toast({ title: "Success", description: "Region updated successfully." });
-        } catch (error) {
-            console.error("Error updating region: ", error);
-            toast({ variant: "destructive", title: "Error", description: "Failed to update region." });
-        }
-    } else {
-        // Add new region
-        try {
-            const { id, ...newRegionData } = selectedRegion;
-            const docRef = await addDoc(collection(firestore, 'regions'), newRegionData);
-            setRegions([...regions, { id: docRef.id, ...newRegionData }]);
-            toast({ title: "Success", description: "Region added successfully." });
-        } catch (error) {
-            console.error("Error adding region: ", error);
-            toast({ variant: "destructive", title: "Error", description: "Failed to add region." });
-        }
+    try {
+      if (selectedRegion.id) {
+          const regionDocRef = doc(firestore, 'regions', selectedRegion.id);
+          const { id, ...regionData } = selectedRegion;
+          await updateDoc(regionDocRef, regionData);
+          toast({ title: "Success", description: "Region updated successfully." });
+      } else {
+          const { id, ...newRegionData } = selectedRegion;
+          await addDoc(collection(firestore, 'regions'), newRegionData);
+          toast({ title: "Success", description: "Region added successfully." });
+      }
+      setIsEditDialogOpen(false);
+      setSelectedRegion(null);
+    } catch (error) {
+        console.error("Error saving region: ", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to save region." });
+    } finally {
+        setIsSubmitting(false);
     }
-
-    setIsLoading(false);
-    setIsEditDialogOpen(false);
-    setSelectedRegion(null);
   };
 
   const handleDeleteRegion = async () => {
     if (!selectedRegion || !selectedRegion.id) return;
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
         await deleteDoc(doc(firestore, 'regions', selectedRegion.id));
-        setRegions(regions.filter((r) => r.id !== selectedRegion.id));
         toast({ title: "Success", description: "Region deleted successfully." });
+        setIsDeleteDialogOpen(false);
+        setSelectedRegion(null);
     } catch (error) {
         console.error("Error deleting region: ", error);
         toast({ variant: "destructive", title: "Error", description: "Failed to delete region. It might be in use by a supplier or unit." });
+    } finally {
+        setIsSubmitting(false);
     }
-    setIsLoading(false);
-    setIsDeleteDialogOpen(false);
-    setSelectedRegion(null);
   };
 
   return (
@@ -130,20 +134,27 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
           <TableHeader className="sticky top-0 bg-card z-10">
             <TableRow>
               <TableHead>Region Name</TableHead>
-              <TableHead>
+              <TableHead className="w-[100px] text-right">
                 <span className="sr-only">Actions</span>
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {regions.length === 0 ? (
+             {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                    </TableRow>
+                ))
+            ) : regions.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={2} className="text-center text-muted-foreground">No regions found.</TableCell>
                 </TableRow>
             ) : regions.map((region) => (
               <TableRow key={region.id}>
                 <TableCell className="font-medium">{region.name}</TableCell>
-                <TableCell>
+                <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
                       size="icon"
@@ -195,11 +206,12 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveRegion} disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save changes'}
+            <Button onClick={handleSaveRegion} disabled={isSubmitting}>
+                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -218,13 +230,13 @@ export function RegionClientTable({ initialRegions }: RegionClientTableProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteRegion}
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isLoading ? 'Deleting...' : 'Delete'}
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

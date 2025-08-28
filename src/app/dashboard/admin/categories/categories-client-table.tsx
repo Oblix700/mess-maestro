@@ -28,27 +28,40 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import React, { useState } from 'react';
+import { Loader2, Pencil, PlusCircle, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import type { Category } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { firestore } from '@/lib/firebase/client';
-import { collection, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteDoc, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface CategoriesClientTableProps {
-    initialCategories: Category[];
-}
-
-export function CategoriesClientTable({ initialCategories }: CategoriesClientTableProps) {
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
-  const [isLoading, setIsLoading] = useState(false);
+export function CategoriesClientTable() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const q = query(collection(firestore, 'categories'), orderBy('name'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const categoriesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      setCategories(categoriesData);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching categories in real-time: ", error);
+      toast({ variant: "destructive", title: "Error", description: "Failed to load categories."});
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
 
   const handleEditClick = (category: Category) => {
     setSelectedCategory(category);
@@ -70,52 +83,43 @@ export function CategoriesClientTable({ initialCategories }: CategoriesClientTab
         toast({ variant: "destructive", title: "Validation Error", description: "Category name is required." });
         return;
     }
-    setIsLoading(true);
+    setIsSubmitting(true);
 
-    if (selectedCategory.id) {
-        // Update existing category
-        try {
-            const categoryDocRef = doc(firestore, 'categories', selectedCategory.id);
-            const { id, ...categoryData } = selectedCategory;
-            await updateDoc(categoryDocRef, categoryData);
-            setCategories(categories.map((r) => (r.id === selectedCategory.id ? selectedCategory : r)));
-            toast({ title: "Success", description: "Category updated successfully." });
-        } catch (error) {
-            console.error("Error updating category: ", error);
-            toast({ variant: "destructive", title: "Error", description: "Failed to update category." });
-        }
-    } else {
-        // Add new category
-        try {
-            const { id, ...newCategoryData } = selectedCategory;
-            const docRef = await addDoc(collection(firestore, 'categories'), newCategoryData);
-            setCategories([...categories, { id: docRef.id, ...newCategoryData }]);
-            toast({ title: "Success", description: "Category added successfully." });
-        } catch (error) {
-            console.error("Error adding category: ", error);
-            toast({ variant: "destructive", title: "Error", description: "Failed to add category." });
-        }
+    try {
+      if (selectedCategory.id) {
+          const categoryDocRef = doc(firestore, 'categories', selectedCategory.id);
+          const { id, ...categoryData } = selectedCategory;
+          await updateDoc(categoryDocRef, categoryData);
+          toast({ title: "Success", description: "Category updated successfully." });
+      } else {
+          const { id, ...newCategoryData } = selectedCategory;
+          await addDoc(collection(firestore, 'categories'), newCategoryData);
+          toast({ title: "Success", description: "Category added successfully." });
+      }
+      setIsEditDialogOpen(false);
+      setSelectedCategory(null);
+    } catch (error) {
+        console.error("Error saving category: ", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to save category." });
+    } finally {
+        setIsSubmitting(false);
     }
-
-    setIsLoading(false);
-    setIsEditDialogOpen(false);
-    setSelectedCategory(null);
   };
 
   const handleDeleteCategory = async () => {
     if (!selectedCategory || !selectedCategory.id) return;
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
         await deleteDoc(doc(firestore, 'categories', selectedCategory.id));
-        setCategories(categories.filter((r) => r.id !== selectedCategory.id));
         toast({ title: "Success", description: "Category deleted successfully." });
+        setIsDeleteDialogOpen(false);
+        setSelectedCategory(null);
     } catch (error) {
         console.error("Error deleting category: ", error);
         toast({ variant: "destructive", title: "Error", description: "Failed to delete category. It might be in use." });
+    } finally {
+        setIsSubmitting(false);
     }
-    setIsLoading(false);
-    setIsDeleteDialogOpen(false);
-    setSelectedCategory(null);
   };
 
   const handleFieldChange = (field: keyof Omit<Category, 'id'>, value: string) => {
@@ -138,13 +142,21 @@ export function CategoriesClientTable({ initialCategories }: CategoriesClientTab
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead>
+              <TableHead className="w-[100px] text-right">
                 <span className="sr-only">Actions</span>
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {categories.length === 0 ? (
+            {isLoading ? (
+                Array.from({ length: 10 }).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                    </TableRow>
+                ))
+            ) : categories.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={3} className="text-center text-muted-foreground">No categories found.</TableCell>
                 </TableRow>
@@ -152,7 +164,7 @@ export function CategoriesClientTable({ initialCategories }: CategoriesClientTab
               <TableRow key={category.id}>
                 <TableCell className="font-medium">{category.name}</TableCell>
                 <TableCell>{category.description}</TableCell>
-                <TableCell>
+                <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
                       size="icon"
@@ -215,11 +227,12 @@ export function CategoriesClientTable({ initialCategories }: CategoriesClientTab
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveCategory} disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save changes'}
+            <Button onClick={handleSaveCategory} disabled={isSubmitting}>
+                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -238,13 +251,13 @@ export function CategoriesClientTable({ initialCategories }: CategoriesClientTab
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteCategory}
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isLoading ? 'Deleting...' : 'Delete'}
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

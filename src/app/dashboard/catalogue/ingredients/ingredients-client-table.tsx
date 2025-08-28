@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -36,8 +36,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MoreHorizontal, PlusCircle, X } from 'lucide-react';
-import type { Ingredient, Category, UnitOfMeasure, IngredientVariant } from '@/lib/types';
+import { MoreHorizontal, PlusCircle, X, Loader2 } from 'lucide-react';
+import type { Ingredient, Category, UnitOfMeasure, IngredientVariant, RationScaleItem } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -51,28 +51,24 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/lib/firebase/client';
-import { collection, doc, addDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, onSnapshot } from 'firebase/firestore';
+import { getCategories, getUoms } from '@/lib/firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Define a type for the new variant state
+
 type NewVariantState = {
   packagingSize: string;
   unitOfMeasureId: string;
 };
 
-// Define a type for the ingredient being edited/added
-type EditableIngredient = Omit<Ingredient, 'id'> & { id?: string };
+type EditableIngredient = Omit<RationScaleItem, 'id'> & { id?: string };
 
-interface IngredientsClientTableProps {
-    initialIngredients: Ingredient[];
-    initialCategories: Category[];
-    initialUoms: UnitOfMeasure[];
-}
-
-
-export function IngredientsClientTable({ initialIngredients, initialCategories, initialUoms }: IngredientsClientTableProps) {
-  const [ingredients, setIngredients] = useState<Ingredient[]>(initialIngredients);
-  const [categories] = useState<Category[]>(initialCategories);
-  const [unitsOfMeasure] = useState<UnitOfMeasure[]>(initialUoms);
+export function IngredientsClientTable() {
+  const [ingredients, setIngredients] = useState<RationScaleItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [unitsOfMeasure, setUnitsOfMeasure] = useState<UnitOfMeasure[]>([]);
+  
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Dialog states
@@ -82,9 +78,9 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
   const [isDeleteVariantDialogOpen, setIsDeleteVariantDialogOpen] = useState(false);
   
   // State for items to be actioned on
-  const [selectedIngredient, setSelectedIngredient] = useState<EditableIngredient | null>(null);
+  const [selectedIngredient, setSelectedIngredient] = useState<EditableIngredient | RationScaleItem | null>(null);
   const [variantToDelete, setVariantToDelete] = useState<{ingredientId: string, variant: IngredientVariant} | null>(null);
-  const [ingredientToDelete, setIngredientToDelete] = useState<Ingredient | null>(null);
+  const [ingredientToDelete, setIngredientToDelete] = useState<RationScaleItem | null>(null);
   
   // State for new variant form
   const [newVariant, setNewVariant] = useState<NewVariantState>({ packagingSize: '', unitOfMeasureId: '' });
@@ -94,15 +90,65 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
   const [categoryFilter, setCategoryFilter] = useState('all');
 
   const { toast } = useToast();
+  
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [categoriesData, uomData] = await Promise.all([
+        getCategories(),
+        getUoms(),
+      ]);
+      setCategories(categoriesData);
+      setUnitsOfMeasure(uomData);
+
+      const q = query(collection(firestore, 'rationScaleItems'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const ingredientsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RationScaleItem));
+        setIngredients(ingredientsData);
+        setIsLoading(false);
+      }, (error) => {
+        console.error("Error fetching ingredients: ", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to load ingredient data." });
+        setIsLoading(false);
+      });
+      return unsubscribe;
+
+    } catch (error) {
+      console.error("Error fetching supporting data: ", error);
+      toast({ variant: "destructive", title: "Error", description: "Failed to load categories or UOMs." });
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    fetchData().then(unsub => {
+        unsubscribe = unsub;
+    });
+    return () => {
+        if (unsubscribe) {
+            unsubscribe();
+        }
+    };
+}, [fetchData]);
+
 
   const getUomName = (uomId: string) => unitsOfMeasure.find((u) => u.id === uomId)?.name || 'N/A';
   const getCategoryName = (categoryId: string) => categories.find((c) => c.id === categoryId)?.name || 'N/A';
 
-  const handleOpenIngredientDialog = (ingredient: Ingredient | null) => {
+  const handleOpenIngredientDialog = (ingredient: RationScaleItem | null) => {
     if (ingredient) {
       setSelectedIngredient(ingredient);
     } else {
-      setSelectedIngredient({ kitchenId: 'all', name: '', categoryId: '', variants: [] });
+      setSelectedIngredient({ 
+          name: '', 
+          categoryId: '', 
+          variants: [], 
+          isActive: true, 
+          kitchenId: 'all', 
+          quantity: 0, 
+          unitOfMeasureId: '' 
+        });
     }
     setIsIngredientDialogOpen(true);
   };
@@ -116,15 +162,13 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
     try {
       if (selectedIngredient.id) {
         // Update existing ingredient
-        const ingredientRef = doc(firestore, 'ingredients', selectedIngredient.id);
+        const ingredientRef = doc(firestore, 'rationScaleItems', selectedIngredient.id);
         const { id, ...dataToUpdate } = selectedIngredient;
         await updateDoc(ingredientRef, dataToUpdate);
-        setIngredients(ingredients.map(ing => ing.id === id ? { ...dataToUpdate, id } : ing));
         toast({ title: 'Success', description: 'Ingredient updated successfully.' });
       } else {
         // Add new ingredient
-        const docRef = await addDoc(collection(firestore, 'ingredients'), selectedIngredient);
-        setIngredients([...ingredients, { id: docRef.id, ...selectedIngredient }]);
+        await addDoc(collection(firestore, 'rationScaleItems'), selectedIngredient);
         toast({ title: 'Success', description: 'Ingredient added successfully.' });
       }
       setIsIngredientDialogOpen(false);
@@ -137,7 +181,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
     }
   };
   
-  const confirmDeleteIngredient = (ingredient: Ingredient) => {
+  const confirmDeleteIngredient = (ingredient: RationScaleItem) => {
     setIngredientToDelete(ingredient);
     setIsDeleteDialogOpen(true);
   }
@@ -146,8 +190,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
     if (!ingredientToDelete) return;
     setIsSubmitting(true);
     try {
-      await deleteDoc(doc(firestore, 'ingredients', ingredientToDelete.id));
-      setIngredients(ingredients.filter(ing => ing.id !== ingredientToDelete.id));
+      await deleteDoc(doc(firestore, 'rationScaleItems', ingredientToDelete.id));
       toast({ title: 'Success', description: 'Ingredient deleted successfully.' });
       setIsDeleteDialogOpen(false);
       setIngredientToDelete(null);
@@ -159,7 +202,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
     }
   }
 
-  const handleOpenAddVariantDialog = (ingredient: Ingredient) => {
+  const handleOpenAddVariantDialog = (ingredient: RationScaleItem) => {
     setSelectedIngredient(ingredient);
     setNewVariant({ packagingSize: '', unitOfMeasureId: unitsOfMeasure[0]?.id || '' });
     setIsAddVariantDialogOpen(true);
@@ -171,7 +214,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
       return;
     }
     setIsSubmitting(true);
-    const ingredientRef = doc(firestore, 'ingredients', selectedIngredient.id);
+    const ingredientRef = doc(firestore, 'rationScaleItems', selectedIngredient.id);
     const newVariantToAdd: IngredientVariant = {
       id: `v${Date.now()}`,
       packagingSize: newVariant.packagingSize,
@@ -183,11 +226,6 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
       await updateDoc(ingredientRef, {
         variants: arrayUnion(newVariantToAdd)
       });
-      setIngredients(ingredients.map(ing => 
-        ing.id === selectedIngredient.id 
-          ? { ...ing, variants: [...ing.variants, newVariantToAdd] } 
-          : ing
-      ));
       toast({ title: 'Success', description: 'Packaging option added.' });
       setIsAddVariantDialogOpen(false);
       setSelectedIngredient(null);
@@ -208,17 +246,17 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
     if (!variantToDelete) return;
     const { ingredientId, variant } = variantToDelete;
     setIsSubmitting(true);
-    const ingredientRef = doc(firestore, 'ingredients', ingredientId);
+    const ingredientRef = doc(firestore, 'rationScaleItems', ingredientId);
     
     try {
+      const ingredient = ingredients.find(i => i.id === ingredientId);
+      if (!ingredient) throw new Error("Ingredient not found");
+      const updatedVariants = ingredient.variants.filter(v => v.id !== variant.id);
+
       await updateDoc(ingredientRef, {
-        variants: arrayRemove(variant)
+        variants: updatedVariants
       });
-      setIngredients(ingredients.map(ing => 
-        ing.id === ingredientId 
-          ? { ...ing, variants: ing.variants.filter(v => v.id !== variant.id) } 
-          : ing
-      ));
+      
       toast({ title: 'Success', description: 'Packaging option removed.' });
       setIsDeleteVariantDialogOpen(false);
       setVariantToDelete(null);
@@ -238,12 +276,11 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
 
   const filteredIngredients = useMemo(() => {
     return ingredients.filter(ingredient => {
-      const categoryName = getCategoryName(ingredient.categoryId).toLowerCase();
       const nameMatches = ingredient.name.toLowerCase().includes(nameFilter.toLowerCase());
-      const categoryMatches = categoryFilter === 'all' || categoryName.toLowerCase().includes(categoryFilter.toLowerCase());
+      const categoryMatches = categoryFilter === 'all' || ingredient.categoryId === categoryFilter;
       return nameMatches && categoryMatches;
     }).sort((a,b) => a.name.localeCompare(b.name));
-  }, [ingredients, nameFilter, categoryFilter, categories]);
+  }, [ingredients, nameFilter, categoryFilter]);
   
 
   return (
@@ -263,12 +300,12 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
             <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(cat => (
-                <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                 ))}
             </SelectContent>
             </Select>
         </div>
-        <Button size="sm" className="gap-1" onClick={() => handleOpenIngredientDialog(null)}>
+        <Button size="sm" className="gap-1" onClick={() => handleOpenIngredientDialog(null)} disabled={isLoading}>
             <PlusCircle className="h-4 w-4" />
             Add Ingredient
         </Button>
@@ -281,16 +318,21 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
             <TableHead className="w-[40%]">Name</TableHead>
             <TableHead className="w-[25%]">Category</TableHead>
             <TableHead>Packaging Options</TableHead>
-            <TableHead>
+            <TableHead className="w-[50px]">
                 <span className="sr-only">Actions</span>
             </TableHead>
             </TableRow>
         </TableHeader>
         <TableBody>
-            {initialIngredients.length === 0 ? (
-                <TableRow>
-                    <TableCell colSpan={4} className="text-center">Loading...</TableCell>
-                </TableRow>
+            {isLoading ? (
+                Array.from({ length: 15 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-1/2" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
+                  </TableRow>
+                ))
             ) : filteredIngredients.map((ingredient) => (
             <TableRow key={ingredient.id}>
                 <TableCell className="font-medium">{ingredient.name}</TableCell>
@@ -322,7 +364,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
                     </div>
                 </TableCell>
                 <TableCell>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end">
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button aria-haspopup="true" size="icon" variant="ghost">
@@ -341,7 +383,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
                 </TableCell>
             </TableRow>
             ))}
-                {initialIngredients.length > 0 && filteredIngredients.length === 0 && (
+                {filteredIngredients.length === 0 && !isLoading && (
                 <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">
                         No ingredients found for the current filters.
@@ -352,7 +394,6 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
         </Table>
     </div>
     
-    {/* Add/Edit Ingredient Dialog */}
     <Dialog open={isIngredientDialogOpen} onOpenChange={setIsIngredientDialogOpen}>
       <DialogContent>
         <DialogHeader>
@@ -361,14 +402,14 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
             {selectedIngredient?.id ? 'Update the details for this ingredient.' : 'Create a new ingredient for the catalogue.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+       {selectedIngredient && <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">Name</Label>
-            <Input id="name" value={selectedIngredient?.name || ''} onChange={(e) => handleFieldChange('name', e.target.value)} className="col-span-3" />
+            <Input id="name" value={selectedIngredient.name || ''} onChange={(e) => handleFieldChange('name', e.target.value)} className="col-span-3" />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="category" className="text-right">Category</Label>
-            <Select value={selectedIngredient?.categoryId || ''} onValueChange={(value) => handleFieldChange('categoryId', value)}>
+            <Select value={selectedIngredient.categoryId || ''} onValueChange={(value) => handleFieldChange('categoryId', value)}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
@@ -377,18 +418,17 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
               </SelectContent>
             </Select>
           </div>
-        </div>
+        </div>}
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsIngredientDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
           <Button onClick={handleSaveIngredient} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save Ingredient'}
+            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Ingredient'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
 
 
-    {/* Add Variant Dialog */}
     <Dialog open={isAddVariantDialogOpen} onOpenChange={setIsAddVariantDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -435,12 +475,11 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
             <Button variant="outline" onClick={() => setIsAddVariantDialogOpen(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button onClick={handleAddVariant} disabled={isSubmitting}>{isSubmitting ? 'Adding...' : 'Add Option'}</Button>
+            <Button onClick={handleAddVariant} disabled={isSubmitting}>{isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...</> : 'Add Option'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-    {/* Delete Ingredient Confirmation */}
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -452,13 +491,12 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => setIngredientToDelete(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={handleDeleteIngredient} className="bg-destructive hover:bg-destructive/90" disabled={isSubmitting}>
-            {isSubmitting ? 'Deleting...' : 'Delete'}
+            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : 'Delete'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
-    </Dialog>
+    </AlertDialog>
 
-    {/* Delete Variant Confirmation */}
     <AlertDialog open={isDeleteVariantDialogOpen} onOpenChange={setIsDeleteVariantDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -474,7 +512,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Deleting...' : 'Delete'}
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

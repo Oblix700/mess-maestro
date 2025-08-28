@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -5,23 +6,20 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { getUoms } from '@/lib/firebase/firestore';
 import { UomClientTable } from './uom-client-table';
 
-export default async function UomPage() {
-  const uoms = await getUoms();
-
+export default function UomPage() {
   return (
     <>
       <Card>
         <CardHeader>
           <CardTitle>Units of Measure (UOM)</CardTitle>
           <CardDescription>
-            Manage your units of measure for ingredients.
+            Manage your units of measure for ingredients in real-time.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <UomClientTable initialUoms={uoms} />
+          <UomClientTable />
         </CardContent>
       </Card>
     </>

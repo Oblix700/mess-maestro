@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -27,26 +28,39 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Pencil, PlusCircle, Trash2 } from 'lucide-react';
-import React, { useState } from 'react';
+import { Loader2, Pencil, PlusCircle, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import type { UnitOfMeasure } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { firestore } from '@/lib/firebase/client';
-import { doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, setDoc, onSnapshot, query, collection, orderBy } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface UomClientTableProps {
-    initialUoms: UnitOfMeasure[];
-}
-
-export function UomClientTable({ initialUoms }: UomClientTableProps) {
-  const [uoms, setUoms] = useState<UnitOfMeasure[]>(initialUoms);
-  const [isLoading, setIsLoading] = useState(false);
+export function UomClientTable() {
+  const [uoms, setUoms] = useState<UnitOfMeasure[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUom, setSelectedUom] = useState<UnitOfMeasure | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const q = query(collection(firestore, 'unitsOfMeasure'), orderBy('name'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const uomData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UnitOfMeasure));
+        setUoms(uomData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching UOMs in real-time: ", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to load UOMs."});
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [toast]);
 
   const handleEditClick = (uom: UnitOfMeasure) => {
     setSelectedUom(uom);
@@ -68,67 +82,53 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
         toast({ variant: "destructive", title: "Validation Error", description: "UOM name (abbreviation) is required." });
         return;
     }
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     const isEditing = uoms.some(u => u.id === selectedUom.id);
 
-    if (isEditing) {
-        // Update existing UOM
-        try {
-            const uomDocRef = doc(firestore, 'unitsOfMeasure', selectedUom.id);
-            const { id, ...uomData } = selectedUom;
-            await updateDoc(uomDocRef, uomData);
-            setUoms(uoms.map((u) => (u.id === selectedUom.id ? selectedUom : u)));
-            toast({ title: "Success", description: "UOM updated successfully." });
-        } catch (error) {
-            console.error("Error updating UOM: ", error);
-            toast({ variant: "destructive", title: "Error", description: "Failed to update UOM." });
-        }
-    } else {
-        // Add new UOM
-        try {
-            const newUomId = selectedUom.name.toLowerCase().replace(/\s+/g, '-');
-            const { id, ...newUomData } = selectedUom;
-            
-            const uomDocRef = doc(firestore, 'unitsOfMeasure', newUomId);
-            await setDoc(uomDocRef, newUomData);
-            
-            setUoms([...uoms, { ...newUomData, id: newUomId }]);
-            toast({ title: "Success", description: "UOM added successfully." });
-        } catch (error) {
-            console.error("Error adding UOM: ", error);
-            toast({ variant: "destructive", title: "Error", description: "Failed to add UOM." });
-        }
+    try {
+      if (isEditing) {
+          const uomDocRef = doc(firestore, 'unitsOfMeasure', selectedUom.id);
+          const { id, ...uomData } = selectedUom;
+          await updateDoc(uomDocRef, uomData);
+          toast({ title: "Success", description: "UOM updated successfully." });
+      } else {
+          const newUomId = selectedUom.name.toLowerCase().replace(/\s+/g, '-');
+          const { id, ...newUomData } = { ...selectedUom, id: newUomId };
+          
+          const uomDocRef = doc(firestore, 'unitsOfMeasure', newUomId);
+          await setDoc(uomDocRef, newUomData);
+          toast({ title: "Success", description: "UOM added successfully." });
+      }
+      setIsEditDialogOpen(false);
+      setSelectedUom(null);
+    } catch (error) {
+      console.error("Error saving UOM: ", error);
+      toast({ variant: "destructive", title: "Error", description: "Failed to save UOM." });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsLoading(false);
-    setIsEditDialogOpen(false);
-    setSelectedUom(null);
   };
 
   const handleDeleteUom = async () => {
     if (!selectedUom || !selectedUom.id) return;
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
         await deleteDoc(doc(firestore, 'unitsOfMeasure', selectedUom.id));
-        setUoms(uoms.filter((u) => u.id !== selectedUom.id));
         toast({ title: "Success", description: "UOM deleted successfully." });
+        setIsDeleteDialogOpen(false);
+        setSelectedUom(null);
     } catch (error) {
         console.error("Error deleting UOM: ", error);
         toast({ variant: "destructive", title: "Error", description: "Failed to delete UOM. It might be in use." });
+    } finally {
+        setIsSubmitting(false);
     }
-    setIsLoading(false);
-    setIsDeleteDialogOpen(false);
-    setSelectedUom(null);
   };
 
   const handleFieldChange = (field: keyof Omit<UnitOfMeasure, 'id'>, value: string) => {
     if (selectedUom) {
-      const newUom = { ...selectedUom, [field]: value };
-      if (field === 'name' && !selectedUom.id) {
-        newUom.id = value.toLowerCase().replace(/\s+/g, '-');
-      }
-      setSelectedUom(newUom);
+      setSelectedUom({ ...selectedUom, [field]: value });
     }
   };
 
@@ -147,13 +147,21 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
             <TableRow>
               <TableHead>Abbreviation</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead>
+              <TableHead className="w-[100px] text-right">
                 <span className="sr-only">Actions</span>
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {uoms.length === 0 ? (
+             {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-1/2" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                    </TableRow>
+                ))
+            ) : uoms.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={3} className="text-center text-muted-foreground">No UOMs found.</TableCell>
                 </TableRow>
@@ -161,7 +169,7 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
               <TableRow key={uom.id}>
                 <TableCell className="font-medium">{uom.name}</TableCell>
                 <TableCell>{uom.description}</TableCell>
-                <TableCell>
+                <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
                       size="icon"
@@ -196,17 +204,17 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
               {uoms.some(u => u.id === selectedUom?.id) ? "Make changes to the unit of measure." : 'Add a new unit of measure to the list.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          {selectedUom && <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
                 Abbreviation
               </Label>
               <Input
                 id="name"
-                value={selectedUom?.name || ''}
+                value={selectedUom.name}
                 onChange={(e) => handleFieldChange('name', e.target.value)}
                 className="col-span-3"
-                disabled={uoms.some(u => u.id === selectedUom?.id)}
+                disabled={uoms.some(u => u.id === selectedUom.id)}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -215,24 +223,24 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
               </Label>
               <Input
                 id="description"
-                value={selectedUom?.description || ''}
+                value={selectedUom.description}
                 onChange={(e) =>
                   handleFieldChange('description', e.target.value)
                 }
                 className="col-span-3"
               />
             </div>
-          </div>
+          </div>}
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button onClick={handleSaveUom} disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save changes'}
+            <Button onClick={handleSaveUom} disabled={isSubmitting}>
+                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -251,13 +259,13 @@ export function UomClientTable({ initialUoms }: UomClientTableProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteUom}
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isLoading ? 'Deleting...' : 'Delete'}
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

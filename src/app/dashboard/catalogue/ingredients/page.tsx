@@ -6,30 +6,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { getCategories, getIngredients, getUoms } from '@/lib/firebase/firestore';
 import { IngredientsClientTable } from './ingredients-client-table';
 
-export default async function IngredientsPage() {
-    const [ingredientsData, categoriesData, uomData] = await Promise.all([
-        getIngredients(),
-        getCategories(),
-        getUoms(),
-    ]);
-
+export default function IngredientsPage() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Ingredients</CardTitle>
+                <CardTitle>Ingredients Catalogue</CardTitle>
                 <CardDescription>
-                Manage your ingredients and their packaging sizes.
+                View and manage your master ingredients list and their packaging sizes.
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <IngredientsClientTable 
-                    initialIngredients={ingredientsData}
-                    initialCategories={categoriesData}
-                    initialUoms={uomData}
-                />
+                <IngredientsClientTable />
             </CardContent>
         </Card>
     )

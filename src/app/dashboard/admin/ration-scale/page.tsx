@@ -45,15 +45,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { collection, doc, writeBatch, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, addDoc, updateDoc, deleteDoc, query, onSnapshot } from 'firebase/firestore';
 import type { RationScaleItem, Category, UnitOfMeasure } from '@/lib/types';
 import { firestore } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getCategories, getUoms, getRationScale } from '@/lib/firebase/firestore';
+import { getCategories, getUoms } from '@/lib/firebase/firestore';
 import { Loader2, Save, PlusCircle, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface RationScaleRow extends RationScaleItem {
   isModified?: boolean;
@@ -75,44 +76,57 @@ export default function RationScalePage() {
 
   const { toast } = useToast();
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [rationScaleData, categoriesData, uomData] = await Promise.all([
-        getRationScale(true), // Fetch all items, including inactive ones
-        getCategories(),
-        getUoms(),
-      ]);
-      const rationScaleRows = rationScaleData.map(doc => ({
-        ...doc,
-        quantity: Number(doc.quantity || 0),
-        isActive: doc.isActive !== false, // Default to true if undefined
-        isModified: false,
-      }));
-      setItems(rationScaleRows);
-      setCategories(categoriesData);
-      setUnitsOfMeasure(uomData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriesData, uomData] = await Promise.all([
+          getCategories(),
+          getUoms(),
+        ]);
+        setCategories(categoriesData);
+        setUnitsOfMeasure(uomData);
+      } catch (error) {
+        console.error("Error fetching supporting data:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch categories or UOMs.",
+        });
+      }
+    };
+    fetchData();
+
+    const q = query(collection(firestore, 'rationScaleItems'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const rationScaleData = snapshot.docs.map(doc => {
+        const data = doc.data() as RationScaleItem;
+        return {
+          ...data,
+          id: doc.id,
+          quantity: Number(data.quantity || 0),
+          isActive: data.isActive !== false, // Default to true if undefined
+          isModified: false,
+        }
+      });
+      setItems(rationScaleData);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching ration scale in real-time:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to fetch ration scale data.",
+        description: "Failed to load ration scale data.",
       });
-    } finally {
       setIsLoading(false);
-    }
-  }, [toast]);
+    });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    return () => unsubscribe();
+  }, [toast]);
   
   const handleOpenIngredientDialog = (item: RationScaleRow | null) => {
     if (item) {
         setSelectedIngredient(item);
     } else {
-        // For new ingredient, create a placeholder
         setSelectedIngredient({
             id: '',
             name: '',
@@ -136,14 +150,23 @@ export default function RationScalePage() {
     setItems(prevItems =>
       prevItems.map(item => {
         if (item.id === itemId) {
-          let newValue = value;
+          const originalItem = items.find(i => i.id === itemId);
+          let isModified = true;
+          
           if (field === 'quantity') {
-            newValue = Number(value);
-            // Check if the new value is different from the original after parsing
-            const originalValue = items.find(i => i.id === itemId)?.quantity ?? 0;
-            return { ...item, [field]: newValue, isModified: newValue !== originalValue };
+            const numValue = Number(value);
+            isModified = numValue !== originalItem?.quantity;
+            return { ...item, [field]: numValue, isModified };
           }
-          return { ...item, [field]: newValue, isModified: true };
+          
+          if (field === 'isActive') {
+             isModified = value !== originalItem?.isActive;
+          }
+           if (field === 'unitOfMeasureId') {
+             isModified = value !== originalItem?.unitOfMeasureId;
+          }
+
+          return { ...item, [field]: value, isModified: isModified || item.isModified };
         }
         return item;
       })
@@ -172,7 +195,7 @@ export default function RationScalePage() {
 
     try {
       await batch.commit();
-      toast({ title: "Success", description: "Ration scale updated successfully." });
+      toast({ title: "Success", description: `${modifiedItems.length} item(s) updated successfully.` });
       setItems(prev => prev.map(item => ({ ...item, isModified: false })));
     } catch (error) {
       console.error("Error saving ration scale:", error);
@@ -194,12 +217,11 @@ export default function RationScalePage() {
     setIsSaving(true);
     
     try {
-        if (selectedIngredient.id) { // Editing existing
+        if (selectedIngredient.id) {
             const itemRef = doc(firestore, 'rationScaleItems', selectedIngredient.id);
             await updateDoc(itemRef, { name, categoryId });
-            setItems(items.map(it => it.id === selectedIngredient.id ? { ...it, name, categoryId, isModified: false } : it));
             toast({ title: 'Success', description: 'Ingredient updated.' });
-        } else { // Adding new
+        } else { 
             const newItem: Omit<RationScaleItem, 'id'> = {
                 name: selectedIngredient.name,
                 categoryId: selectedIngredient.categoryId,
@@ -210,9 +232,7 @@ export default function RationScalePage() {
                 dishIds: [],
                 isActive: true,
             };
-            const docRef = await addDoc(collection(firestore, 'rationScaleItems'), newItem);
-            const newCompleteItem = { ...newItem, id: docRef.id, isModified: false };
-            setItems([...items, newCompleteItem]);
+            await addDoc(collection(firestore, 'rationScaleItems'), newItem);
             toast({ title: 'Success', description: 'Ingredient added.' });
         }
         setIsIngredientDialogOpen(false);
@@ -231,7 +251,6 @@ export default function RationScalePage() {
     setIsSaving(true);
     try {
         await deleteDoc(doc(firestore, 'rationScaleItems', ingredientToDelete.id));
-        setItems(items.filter(it => it.id !== ingredientToDelete.id));
         toast({ title: 'Success', description: 'Ingredient deleted.' });
         setIsDeleteDialogOpen(false);
         setIngredientToDelete(null);
@@ -285,7 +304,7 @@ export default function RationScalePage() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={() => handleOpenIngredientDialog(null)}>
+                <Button size="sm" variant="outline" onClick={() => handleOpenIngredientDialog(null)} disabled={isLoading}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add Ingredient
                 </Button>
@@ -310,14 +329,20 @@ export default function RationScalePage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center">Loading ration scale...</TableCell>
-                  </TableRow>
+                  Array.from({ length: 15 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-full" /></TableCell>
+                    </TableRow>
+                  ))
                 ) : sortedCategoryIds.length > 0 ? (
                   sortedCategoryIds.map(categoryId => (
                     <React.Fragment key={categoryId}>
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
-                        <TableCell colSpan={5} className="font-bold text-primary sticky left-0 bg-muted/50 z-10">
+                        <TableCell colSpan={5} className="font-bold text-primary sticky left-0 bg-muted/50">
                           {getCategoryName(categoryId)}
                         </TableCell>
                       </TableRow>
@@ -335,11 +360,12 @@ export default function RationScalePage() {
                             <Input
                               type="text"
                               inputMode="decimal"
-                              defaultValue={Number.isNaN(item.quantity) ? '' : Number(item.quantity).toFixed(3)}
+                              defaultValue={Number(item.quantity || 0).toFixed(3)}
                               onChange={(e) => {
                                 const value = e.target.value;
-                                if (/^\d*\.?\d{0,3}$/.test(value) || value === '') {
-                                  handleFieldChange(item.id, 'quantity', value);
+                                // Allow empty string or valid decimal format
+                                if (value === '' || /^\d*\.?\d{0,3}$/.test(value)) {
+                                   handleFieldChange(item.id, 'quantity', value === '' ? '0' : value);
                                 }
                               }}
                               className="w-full"
@@ -395,7 +421,6 @@ export default function RationScalePage() {
         </CardContent>
       </Card>
       
-      {/* Add/Edit Ingredient Dialog */}
       <Dialog open={isIngredientDialogOpen} onOpenChange={setIsIngredientDialogOpen}>
         <DialogContent>
             <DialogHeader>
@@ -424,13 +449,12 @@ export default function RationScalePage() {
             <DialogFooter>
                 <Button variant="outline" onClick={() => setIsIngredientDialogOpen(false)} disabled={isSaving}>Cancel</Button>
                 <Button onClick={handleSaveIngredient} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Ingredient'}
+                    {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Ingredient'}
                 </Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
@@ -442,7 +466,7 @@ export default function RationScalePage() {
             <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setIngredientToDelete(null)} disabled={isSaving}>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteIngredient} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Delete'}
+                    {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : 'Delete'}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
