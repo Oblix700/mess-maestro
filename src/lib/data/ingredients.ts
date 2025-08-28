@@ -12,10 +12,9 @@ const transformRationScaleToIngredient = (item: EnrichedRationScaleItem): Ingred
         categoryId: item.categoryId,
         variants: item.variants,
         dishIds: item.dishIds || [],
+        isActive: item.isActive,
     };
 };
 
 // Generate the ingredients array dynamically from the ration scale data.
 export const ingredients: Ingredient[] = rationScaleItems.map(transformRationScaleToIngredient);
-
-    

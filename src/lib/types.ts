@@ -1,6 +1,7 @@
 
 
 
+
 export interface Category {
   id: string;
   name: string;
@@ -40,6 +41,7 @@ export interface Ingredient {
   categoryId: string;
   variants: IngredientVariant[];
   dishIds?: string[];
+  isActive: boolean;
 }
 
 export interface Dish {
@@ -79,6 +81,7 @@ export interface RationScaleItem {
   unitOfMeasureId: string;
   variants: IngredientVariant[];
   dishIds?: string[];
+  isActive: boolean;
 }
 
 

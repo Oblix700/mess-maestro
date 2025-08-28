@@ -105,13 +105,8 @@ export default function CheckStatusPage() {
             batch.set(docRef, itemToSave);
         });
         
-        // ** THE FIX IS HERE **
-        // We now save the *entire* enriched ration scale item to the `rationScaleItems` collection.
-        // This collection is now the single source of truth for ingredients and their properties.
         rationScaleItems.forEach(item => {
             const docRef = doc(collection(firestore, 'rationScaleItems'), item.id);
-            // The item from lib/data is an EnrichedRationScaleItem, which is compatible
-            // with the updated RationScaleItem type. We can save it directly.
             batch.set(docRef, item);
         });
 

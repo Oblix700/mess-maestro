@@ -100,7 +100,7 @@ export async function getUnits(): Promise<Unit[]> {
 export async function getIngredients(): Promise<Ingredient[]> {
     try {
         const ingredientsCollection = collection(firestore, 'ingredients');
-        const q = query(ingredientsCollection, orderBy('name'));
+        const q = query(ingredientsCollection, where('isActive', '==', true), orderBy('name'));
         const querySnapshot = await getDocs(q);
         const ingredientsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
         return ingredientsData;
@@ -112,13 +112,17 @@ export async function getIngredients(): Promise<Ingredient[]> {
 
 /**
  * Fetches all ration scale items from the Firestore database.
+ * @param includeInactive If true, fetches all items regardless of active status.
  * @returns A promise that resolves to an array of RationScaleItems.
  */
-export async function getRationScale(): Promise<RationScaleItem[]> {
+export async function getRationScale(includeInactive = false): Promise<RationScaleItem[]> {
     try {
         const rationScaleCollection = collection(firestore, 'rationScaleItems');
-        // This query is no longer ordered by name by default, as grouping will happen on the client
-        const querySnapshot = await getDocs(rationScaleCollection);
+        const q = includeInactive 
+            ? query(rationScaleCollection)
+            : query(rationScaleCollection, where('isActive', '==', true));
+        
+        const querySnapshot = await getDocs(q);
         const rationScaleData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RationScaleItem));
         return rationScaleData;
     } catch (error) {
@@ -257,5 +261,3 @@ export async function getUsers(): Promise<User[]> {
         return [];
     }
 }
-
-    

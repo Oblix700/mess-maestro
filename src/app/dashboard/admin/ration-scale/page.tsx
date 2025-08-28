@@ -46,13 +46,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { collection, doc, writeBatch, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import type { RationScaleItem, Category, UnitOfMeasure, Ingredient } from '@/lib/types';
+import type { RationScaleItem, Category, UnitOfMeasure } from '@/lib/types';
 import { firestore } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getCategories, getUoms, getRationScale, getIngredients } from '@/lib/firebase/firestore';
+import { getCategories, getUoms, getRationScale } from '@/lib/firebase/firestore';
 import { Loader2, Save, PlusCircle, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
 
 interface RationScaleRow extends RationScaleItem {
   isModified?: boolean;
@@ -78,13 +79,14 @@ export default function RationScalePage() {
     setIsLoading(true);
     try {
       const [rationScaleData, categoriesData, uomData] = await Promise.all([
-        getRationScale(),
+        getRationScale(true), // Fetch all items, including inactive ones
         getCategories(),
         getUoms(),
       ]);
       const rationScaleRows = rationScaleData.map(doc => ({
         ...doc,
         quantity: Number(doc.quantity || 0),
+        isActive: doc.isActive !== false, // Default to true if undefined
         isModified: false,
       }));
       setItems(rationScaleRows);
@@ -119,6 +121,7 @@ export default function RationScalePage() {
             unitOfMeasureId: unitsOfMeasure[0]?.id || '',
             kitchenId: 'all',
             variants: [],
+            isActive: true,
         });
     }
     setIsIngredientDialogOpen(true);
@@ -129,13 +132,16 @@ export default function RationScalePage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleFieldChange = (itemId: string, field: 'quantity' | 'unitOfMeasureId', value: string | number) => {
+  const handleFieldChange = (itemId: string, field: 'quantity' | 'unitOfMeasureId' | 'isActive', value: string | number | boolean) => {
     setItems(prevItems =>
       prevItems.map(item => {
         if (item.id === itemId) {
           let newValue = value;
           if (field === 'quantity') {
             newValue = Number(value);
+            // Check if the new value is different from the original after parsing
+            const originalValue = items.find(i => i.id === itemId)?.quantity ?? 0;
+            return { ...item, [field]: newValue, isModified: newValue !== originalValue };
           }
           return { ...item, [field]: newValue, isModified: true };
         }
@@ -160,12 +166,13 @@ export default function RationScalePage() {
       batch.update(itemRef, {
         quantity: Number(itemData.quantity),
         unitOfMeasureId: itemData.unitOfMeasureId,
+        isActive: itemData.isActive,
       });
     });
 
     try {
       await batch.commit();
-      toast({ title: "Success", description: "Ration scale quantities updated successfully." });
+      toast({ title: "Success", description: "Ration scale updated successfully." });
       setItems(prev => prev.map(item => ({ ...item, isModified: false })));
     } catch (error) {
       console.error("Error saving ration scale:", error);
@@ -190,7 +197,7 @@ export default function RationScalePage() {
         if (selectedIngredient.id) { // Editing existing
             const itemRef = doc(firestore, 'rationScaleItems', selectedIngredient.id);
             await updateDoc(itemRef, { name, categoryId });
-            setItems(items.map(it => it.id === selectedIngredient.id ? { ...it, name, categoryId } : it));
+            setItems(items.map(it => it.id === selectedIngredient.id ? { ...it, name, categoryId, isModified: false } : it));
             toast({ title: 'Success', description: 'Ingredient updated.' });
         } else { // Adding new
             const newItem: Omit<RationScaleItem, 'id'> = {
@@ -200,7 +207,8 @@ export default function RationScalePage() {
                 unitOfMeasureId: selectedIngredient.unitOfMeasureId,
                 kitchenId: 'all',
                 variants: [],
-                dishIds: []
+                dishIds: [],
+                isActive: true,
             };
             const docRef = await addDoc(collection(firestore, 'rationScaleItems'), newItem);
             const newCompleteItem = { ...newItem, id: docRef.id, isModified: false };
@@ -273,7 +281,7 @@ export default function RationScalePage() {
             <div>
               <CardTitle>Ration Scale Management</CardTitle>
               <CardDescription>
-                Manage ingredients and their standard ration scale.
+                Manage ingredients, their status, and their standard ration scale.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -283,7 +291,7 @@ export default function RationScalePage() {
                 </Button>
                 <Button onClick={handleSaveChanges} disabled={!hasChanges || isSaving || isLoading}>
                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    {isSaving ? 'Saving...' : 'Save Quantities'}
+                    {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
             </div>
           </div>
@@ -293,6 +301,7 @@ export default function RationScalePage() {
             <Table>
               <TableHeader className="sticky top-0 bg-card z-10">
                 <TableRow>
+                  <TableHead className="w-[80px]">Active</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead className="w-[120px]">Quantity</TableHead>
                   <TableHead className="w-[180px]">UOM</TableHead>
@@ -302,25 +311,32 @@ export default function RationScalePage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center">Loading ration scale...</TableCell>
+                    <TableCell colSpan={5} className="text-center">Loading ration scale...</TableCell>
                   </TableRow>
                 ) : sortedCategoryIds.length > 0 ? (
                   sortedCategoryIds.map(categoryId => (
                     <React.Fragment key={categoryId}>
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
-                        <TableCell colSpan={4} className="font-bold text-primary sticky left-0 bg-muted/50 z-10">
+                        <TableCell colSpan={5} className="font-bold text-primary sticky left-0 bg-muted/50 z-10">
                           {getCategoryName(categoryId)}
                         </TableCell>
                       </TableRow>
                       {itemsByCategory[categoryId].map(item => (
-                        <TableRow key={item.id} className={cn(item.isModified && "bg-blue-50 dark:bg-blue-900/20")}>
+                        <TableRow key={item.id} className={cn(item.isModified && "bg-blue-50 dark:bg-blue-900/20", !item.isActive && "text-muted-foreground bg-gray-50 dark:bg-gray-900/30")}>
+                           <TableCell>
+                            <Switch
+                                checked={item.isActive}
+                                onCheckedChange={(checked) => handleFieldChange(item.id, 'isActive', checked)}
+                                aria-label="Toggle active status"
+                             />
+                          </TableCell>
                           <TableCell className="font-medium">{item.name}</TableCell>
                           <TableCell>
                             <Input
                               type="text"
                               inputMode="decimal"
                               defaultValue={Number.isNaN(item.quantity) ? '' : Number(item.quantity).toFixed(3)}
-                              onBlur={(e) => {
+                              onChange={(e) => {
                                 const value = e.target.value;
                                 if (/^\d*\.?\d{0,3}$/.test(value) || value === '') {
                                   handleFieldChange(item.id, 'quantity', value);
@@ -368,7 +384,7 @@ export default function RationScalePage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       No ration scale items found. Use "Add Ingredient" to start.
                     </TableCell>
                   </TableRow>
@@ -434,5 +450,3 @@ export default function RationScalePage() {
     </>
   );
 }
-
-    
