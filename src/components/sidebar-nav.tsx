@@ -114,7 +114,7 @@ const menuItems = [
     icon: Settings,
     subItems: [
         { href: "/dashboard/admin/users", label: "Users", icon: Users },
-        { href: "/dashboard/admin/units", label: "Units", icon: Building },
+        { href: "/dashboard/admin/units", label: "Messes", icon: Building },
         { href: "/dashboard/admin/region", label: "Region", icon: Globe },
         { href: "/dashboard/admin/categories", label: "Categories", icon: Package },
         { href: "/dashboard/admin/uom", label: "UOM", icon: Scaling },
