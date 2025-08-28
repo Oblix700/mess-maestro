@@ -37,7 +37,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MoreHorizontal, PlusCircle, X, Loader2 } from 'lucide-react';
-import type { Ingredient, Category, UnitOfMeasure, IngredientVariant, RationScaleItem } from '@/lib/types';
+import type { Category, UnitOfMeasure, IngredientVariant, RationScaleItem } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/lib/firebase/client';
-import { collection, doc, addDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, onSnapshot } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, deleteDoc, arrayUnion, query, onSnapshot } from 'firebase/firestore';
 import { getCategories, getUoms } from '@/lib/firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -123,7 +123,9 @@ export function IngredientsClientTable() {
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     fetchData().then(unsub => {
-        unsubscribe = unsub;
+        if (unsub) {
+          unsubscribe = unsub;
+        }
     });
     return () => {
         if (unsubscribe) {
@@ -285,54 +287,69 @@ export function IngredientsClientTable() {
 
   return (
     <>
-    <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-            <Input
+          <Input
             placeholder="Filter by name..."
             value={nameFilter}
             onChange={(e) => setNameFilter(e.target.value)}
             className="max-w-sm"
-            />
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          />
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="Filter by category..." />
+              <SelectValue placeholder="Filter by category..." />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(cat => (
-                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                ))}
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
             </SelectContent>
-            </Select>
+          </Select>
         </div>
-        <Button size="sm" className="gap-1" onClick={() => handleOpenIngredientDialog(null)} disabled={isLoading}>
-            <PlusCircle className="h-4 w-4" />
-            Add Ingredient
+        <Button
+          size="sm"
+          className="gap-1"
+          onClick={() => handleOpenIngredientDialog(null)}
+          disabled={isLoading}
+        >
+          <PlusCircle className="h-4 w-4" />
+          Add Ingredient
         </Button>
-    </div>
-        
-    <div className="relative h-[calc(100vh-18rem)] overflow-auto border rounded-md mt-4">
+      </div>
+
+      <div className="relative h-[calc(100vh-18rem)] overflow-auto border rounded-md mt-4">
         <Table>
-        <TableHeader className="sticky top-0 bg-card z-10">
+          <TableHeader className="sticky top-0 bg-card z-10">
             <TableRow>
-            <TableHead className="w-[40%]">Name</TableHead>
-            <TableHead className="w-[25%]">Category</TableHead>
-            <TableHead>Packaging Options</TableHead>
-            <TableHead className="w-[50px]">
+              <TableHead className="w-[40%]">Name</TableHead>
+              <TableHead className="w-[25%]">Category</TableHead>
+              <TableHead>Packaging Options</TableHead>
+              <TableHead className="w-[50px]">
                 <span className="sr-only">Actions</span>
-            </TableHead>
+              </TableHead>
             </TableRow>
-        </TableHeader>
-        <TableBody>
+          </TableHeader>
+          <TableBody>
             {isLoading ? (
-                Array.from({ length: 15 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-1/2" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
-                  </TableRow>
-                ))
+              Array.from({ length: 15 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    <Skeleton className="h-5 w-3/4" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-1/2" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-full" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                  </TableCell>
+                </TableRow>
+              ))
             ) : filteredIngredients.map((ingredient) => (
             <TableRow key={ingredient.id}>
                 <TableCell className="font-medium">{ingredient.name}</TableCell>
@@ -390,133 +407,133 @@ export function IngredientsClientTable() {
                     </TableCell>
                 </TableRow>
             )}
-        </TableBody>
+          </TableBody>
         </Table>
-    </div>
+      </div>
     
-    <Dialog open={isIngredientDialogOpen} onOpenChange={setIsIngredientDialogOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{selectedIngredient?.id ? 'Edit Ingredient' : 'Add Ingredient'}</DialogTitle>
-          <DialogDescription>
-            {selectedIngredient?.id ? 'Update the details for this ingredient.' : 'Create a new ingredient for the catalogue.'}
-          </DialogDescription>
-        </DialogHeader>
-       {selectedIngredient && <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">Name</Label>
-            <Input id="name" value={selectedIngredient.name || ''} onChange={(e) => handleFieldChange('name', e.target.value)} className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="category" className="text-right">Category</Label>
-            <Select value={selectedIngredient.categoryId || ''} onValueChange={(value) => handleFieldChange('categoryId', value)}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>}
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsIngredientDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-          <Button onClick={handleSaveIngredient} disabled={isSubmitting}>
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Ingredient'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-
-    <Dialog open={isAddVariantDialogOpen} onOpenChange={setIsAddVariantDialogOpen}>
+      <Dialog open={isIngredientDialogOpen} onOpenChange={setIsIngredientDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Packaging Option</DialogTitle>
+            <DialogTitle>{selectedIngredient?.id ? 'Edit Ingredient' : 'Add Ingredient'}</DialogTitle>
             <DialogDescription>
-              Enter the size and unit of measure for the new packaging option for <span className="font-semibold">{selectedIngredient?.name}</span>.
+              {selectedIngredient?.id ? 'Update the details for this ingredient.' : 'Create a new ingredient for the catalogue.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+        {selectedIngredient && <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="packagingSize" className="text-right">
-                Size (Qty)
-              </Label>
-              <Input
-                id="packagingSize"
-                type="number"
-                value={newVariant.packagingSize}
-                onChange={(e) => setNewVariant({ ...newVariant, packagingSize: e.target.value })}
-                className="col-span-3"
-              />
+              <Label htmlFor="name" className="text-right">Name</Label>
+              <Input id="name" value={selectedIngredient.name || ''} onChange={(e) => handleFieldChange('name', e.target.value)} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="uom" className="text-right">
-                UOM
-              </Label>
-              <Select
-                value={newVariant.unitOfMeasureId}
-                onValueChange={(value) => setNewVariant({ ...newVariant, unitOfMeasureId: value })}
-              >
+              <Label htmlFor="category" className="text-right">Category</Label>
+              <Select value={selectedIngredient.categoryId || ''} onValueChange={(value) => handleFieldChange('categoryId', value)}>
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select UOM" />
+                  <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {unitsOfMeasure.map((uom) => (
-                    <SelectItem key={uom.id} value={uom.id}>
-                      {uom.name}
-                    </SelectItem>
-                  ))}
+                  {categories.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </div>}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddVariantDialogOpen(false)} disabled={isSubmitting}>
-              Cancel
+            <Button variant="outline" onClick={() => setIsIngredientDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+            <Button onClick={handleSaveIngredient} disabled={isSubmitting}>
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Ingredient'}
             </Button>
-            <Button onClick={handleAddVariant} disabled={isSubmitting}>{isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...</> : 'Add Option'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the ingredient <span className="font-semibold">{ingredientToDelete?.name}</span> and all its variants.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setIngredientToDelete(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDeleteIngredient} className="bg-destructive hover:bg-destructive/90" disabled={isSubmitting}>
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : 'Delete'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
 
-    <AlertDialog open={isDeleteVariantDialogOpen} onOpenChange={setIsDeleteVariantDialogOpen}>
+      <Dialog open={isAddVariantDialogOpen} onOpenChange={setIsAddVariantDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Packaging Option</DialogTitle>
+              <DialogDescription>
+                Enter the size and unit of measure for the new packaging option for <span className="font-semibold">{selectedIngredient?.name}</span>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="packagingSize" className="text-right">
+                  Size (Qty)
+                </Label>
+                <Input
+                  id="packagingSize"
+                  type="number"
+                  value={newVariant.packagingSize}
+                  onChange={(e) => setNewVariant({ ...newVariant, packagingSize: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="uom" className="text-right">
+                  UOM
+                </Label>
+                <Select
+                  value={newVariant.unitOfMeasureId}
+                  onValueChange={(value) => setNewVariant({ ...newVariant, unitOfMeasureId: value })}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select UOM" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unitsOfMeasure.map((uom) => (
+                      <SelectItem key={uom.id} value={uom.id}>
+                        {uom.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddVariantDialogOpen(false)} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddVariant} disabled={isSubmitting}>{isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...</> : 'Add Option'}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this packaging size. This action cannot be undone.
+              This action cannot be undone. This will permanently delete the ingredient <span className="font-semibold">{ingredientToDelete?.name}</span> and all its variants.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setVariantToDelete(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteVariant}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isSubmitting}
-            >
+            <AlertDialogCancel onClick={() => setIngredientToDelete(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteIngredient} className="bg-destructive hover:bg-destructive/90" disabled={isSubmitting}>
               {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={isDeleteVariantDialogOpen} onOpenChange={setIsDeleteVariantDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete this packaging size. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setVariantToDelete(null)} disabled={isSubmitting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteVariant}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</> : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </>
   );
 }

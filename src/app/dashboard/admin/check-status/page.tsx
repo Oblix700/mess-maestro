@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, XCircle, Loader2, Database } from 'lucide-react';
 import { firestore } from '@/lib/firebase/client';
 import { collection, doc, getDoc, setDoc, writeBatch } from 'firebase/firestore';
-import { units, categories, unitsOfMeasure, suppliers, ingredients, dishes, orders, users, menuCycle, rationScaleItems, regions } from '@/lib/data';
+import { units, categories, unitsOfMeasure, suppliers, rationScaleItems, dishes, orders, users, menuCycle, regions } from '@/lib/data';
 
 
 export default function CheckStatusPage() {
@@ -98,17 +98,24 @@ export default function CheckStatusPage() {
             batch.set(docRef, item);
         });
         
-        ingredients.forEach(item => {
-            const docRef = doc(collection(firestore, 'ingredients'), item.id);
-            const { variants, dishIds, ...rest } = item;
-            const itemToSave = { ...rest, variants: variants || [], dishIds: dishIds || [] };
-            batch.set(docRef, itemToSave);
-        });
-        
         rationScaleItems.forEach(item => {
-            const docRef = doc(collection(firestore, 'rationScaleItems'), item.id);
+            const docRef = doc(firestore, 'rationScaleItems'), item.id);
             batch.set(docRef, item);
         });
+        
+        // This is the old way, we now seed from rationScaleItems directly for ingredients
+        // ingredients.forEach(item => {
+        //     const docRef = doc(collection(firestore, 'ingredients'), item.id);
+        //     const { variants, dishIds, ...rest } = item;
+        //     const itemToSave = { ...rest, variants: variants || [], dishIds: dishIds || [] };
+        //     batch.set(docRef, itemToSave);
+        // });
+        
+        rationScaleItems.forEach(item => {
+            const docRef = doc(collection(firestore, 'ingredients'), item.id);
+            batch.set(docRef, item);
+        });
+
 
         dishes.forEach(item => {
             const docRef = doc(collection(firestore, 'dishes'), item.id);
