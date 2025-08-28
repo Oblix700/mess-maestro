@@ -105,14 +105,14 @@ export default function CheckStatusPage() {
             batch.set(docRef, itemToSave);
         });
         
-        // The rationScaleItems from lib/data is now EnrichedRationScaleItem[]
-        // We need to strip the extra fields before saving to the 'rationScaleItems' collection
+        // ** THE FIX IS HERE **
+        // We now save the *entire* enriched ration scale item to the `rationScaleItems` collection.
+        // This collection is now the single source of truth for ingredients and their properties.
         rationScaleItems.forEach(item => {
             const docRef = doc(collection(firestore, 'rationScaleItems'), item.id);
-            // This is the fix: create a new object with only the fields for the RationScaleItem type
-            const { id, kitchenId, name, categoryId, quantity, unitOfMeasureId } = item;
-            const rationScaleDataToSave = { kitchenId, name, categoryId, quantity, unitOfMeasureId };
-            batch.set(docRef, rationScaleDataToSave);
+            // The item from lib/data is an EnrichedRationScaleItem, which is compatible
+            // with the updated RationScaleItem type. We can save it directly.
+            batch.set(docRef, item);
         });
 
         dishes.forEach(item => {

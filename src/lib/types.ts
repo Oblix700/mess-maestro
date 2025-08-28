@@ -67,14 +67,19 @@ export interface Order {
   items: OrderItem[];
 }
 
+// This is now the definitive structure for an item in the ration scale.
+// It includes all information previously split between RationScaleItem and Ingredient.
 export interface RationScaleItem {
-  id: string; // This is the ingredientId
-  kitchenId: string; // Added for multi-tenancy
+  id: string; // This is the ingredientId, e.g., 'P001'
+  kitchenId: string;
   name: string;
   categoryId: string;
   quantity: number;
   unitOfMeasureId: string;
+  variants: IngredientVariant[];
+  dishIds?: string[];
 }
+
 
 // Types for the new Menu Plan structure
 export interface MenuPlanItem {
@@ -133,5 +138,3 @@ export interface MonthlyStrength {
         [day: number]: DailyStrength; // day is 1-31
     };
 }
-
-    

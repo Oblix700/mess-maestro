@@ -26,21 +26,22 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { collection, doc, writeBatch, getDocs } from 'firebase/firestore';
-import type { RationScaleItem, Ingredient, Category, UnitOfMeasure } from '@/lib/types';
+import { collection, doc, writeBatch } from 'firebase/firestore';
+import type { RationScaleItem, Category, UnitOfMeasure } from '@/lib/types';
 import { firestore } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getCategories, getIngredients, getUoms, getRationScale } from '@/lib/firebase/firestore';
+import { getCategories, getUoms, getRationScale } from '@/lib/firebase/firestore';
 import { Loader2, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// The row now holds the full RationScaleItem object, which contains all necessary data.
 interface RationScaleRow extends RationScaleItem {
   isModified?: boolean;
 }
 
 export default function RationScalePage() {
+  // This page now fetches and manages the full RationScaleItem objects.
   const [items, setItems] = useState<RationScaleRow[]>([]);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [unitsOfMeasure, setUnitsOfMeasure] = useState<UnitOfMeasure[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,19 +55,19 @@ export default function RationScalePage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [rationScaleData, ingredientsData, categoriesData, uomData] = await Promise.all([
+        // Fetch all necessary data from Firestore.
+        const [rationScaleData, categoriesData, uomData] = await Promise.all([
           getRationScale(),
-          getIngredients(),
           getCategories(),
           getUoms(),
         ]);
 
+        // Map the fetched data to the component's state structure.
         const rationScaleRows = rationScaleData.map(doc => ({ ...doc, isModified: false } as RationScaleRow));
         
         rationScaleRows.sort((a,b) => a.name.localeCompare(b.name));
 
         setItems(rationScaleRows);
-        setIngredients(ingredientsData);
         setCategories(categoriesData);
         setUnitsOfMeasure(uomData);
 
@@ -84,10 +85,6 @@ export default function RationScalePage() {
     fetchData();
   }, [toast]);
 
-
-  const getIngredientName = (ingredientId: string) => {
-    return ingredients.find(i => i.id === ingredientId)?.name || 'N/A';
-  };
 
   const getCategoryName = (categoryId: string) => {
     return categories.find(c => c.id === categoryId)?.name || 'N/A';
@@ -115,10 +112,9 @@ export default function RationScalePage() {
 
     modifiedItems.forEach(item => {
         const { isModified, ...itemData } = item;
-        // The item in rationScaleItems collection does not have 'variants' or 'dishIds'
-        const { variants, dishIds, ...rationScaleItemData } = itemData as any;
         const itemRef = doc(firestore, 'rationScaleItems', item.id);
-        batch.update(itemRef, rationScaleItemData);
+        // We now save the complete itemData object, as it matches the Firestore document structure.
+        batch.update(itemRef, itemData);
     });
 
     try {
@@ -137,14 +133,11 @@ export default function RationScalePage() {
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
-      const name = getIngredientName(item.id).toLowerCase();
-      const categoryId = ingredients.find(i => i.id === item.id)?.categoryId || '';
-      
-      const nameMatches = name.includes(nameFilter.toLowerCase());
-      const categoryMatches = categoryFilter === '' || categoryFilter.toLowerCase() === 'all' || categoryId === categoryFilter;
+      const nameMatches = item.name.toLowerCase().includes(nameFilter.toLowerCase());
+      const categoryMatches = categoryFilter === '' || categoryFilter.toLowerCase() === 'all' || item.categoryId === categoryFilter;
       return nameMatches && categoryMatches;
     });
-  }, [items, nameFilter, categoryFilter, ingredients]);
+  }, [items, nameFilter, categoryFilter]);
 
   return (
     <Card>
@@ -200,9 +193,11 @@ export default function RationScalePage() {
                 ) : filteredItems.length > 0 ? (
                   filteredItems.map((item) => (
                       <TableRow key={item.id} className={cn(item.isModified && "bg-blue-50 dark:bg-blue-900/20")}>
-                          <TableCell className="font-medium">{getIngredientName(item.id)}</TableCell>
+                          {/* We can now directly access the name from the item */}
+                          <TableCell className="font-medium">{item.name}</TableCell>
                           <TableCell>
-                          {getCategoryName(ingredients.find(i => i.id === item.id)?.categoryId || '')}
+                            {/* The category name is looked up from the fetched categories list */}
+                            {getCategoryName(item.categoryId)}
                           </TableCell>
                           <TableCell>
                               <Input 
