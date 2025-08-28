@@ -456,7 +456,7 @@ export function IngredientsClientTable({ initialIngredients, initialCategories, 
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
-    </AlertDialog>
+    </Dialog>
 
     {/* Delete Variant Confirmation */}
     <AlertDialog open={isDeleteVariantDialogOpen} onOpenChange={setIsDeleteVariantDialogOpen}>
