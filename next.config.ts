@@ -17,7 +17,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {},
+  experimental: {
+    devRevalidate: false,
+  },
 };
 
 export default nextConfig;
