@@ -27,7 +27,7 @@ const allCategoriesMaster: Category[] = [
     { id: 'CAT021', name: 'HERBS AND SPICES', description: '' },
     { id: 'CAT022', name: 'JELLY POWDERS AND DESSERTS', description: '' },
     { id: 'CAT023', name: 'SOUP POWDER', description: '' },
-    { id: 'CAT024', name: 'SACHET/PORTIONS FOR TAKE-AWAY MEALS', description: '' },
+    { id: 'CAT024', 'name': 'SACHET/PORTIONS FOR TAKE-AWAY MEALS', description: '' },
     { id: 'CAT025', name: 'DESSERT SAUCES', description: '' },
     { id: 'CAT026', name: 'LUNCH PACKS', description: '' },
     { id: 'CAT027', name: 'SUSTAINMENT PACKS', description: '' },
@@ -39,5 +39,3 @@ const allCategoriesMaster: Category[] = [
 // or showing all categories as needed. This ensures that even if a category
 // has no ingredients yet, it can still be managed in the admin UI.
 export const categories: Category[] = allCategoriesMaster;
-
-    

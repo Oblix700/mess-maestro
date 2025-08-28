@@ -109,8 +109,10 @@ export default function CheckStatusPage() {
         // We need to strip the extra fields before saving to the 'rationScaleItems' collection
         rationScaleItems.forEach(item => {
             const docRef = doc(collection(firestore, 'rationScaleItems'), item.id);
-            const { variants, dishIds, ...rationScaleData } = item;
-            batch.set(docRef, rationScaleData);
+            // This is the fix: create a new object with only the fields for the RationScaleItem type
+            const { id, kitchenId, name, categoryId, quantity, unitOfMeasureId } = item;
+            const rationScaleDataToSave = { kitchenId, name, categoryId, quantity, unitOfMeasureId };
+            batch.set(docRef, rationScaleDataToSave);
         });
 
         dishes.forEach(item => {
@@ -232,5 +234,3 @@ export default function CheckStatusPage() {
     </Card>
   );
 }
-
-    
