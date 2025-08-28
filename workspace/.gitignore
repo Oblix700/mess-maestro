@@ -1,18 +1,17 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Node
+node_modules
+npm-debug.log*
+.yarn*
+.pnpm-store
+.next
+.out
 
-# Dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# Next.js build output
-/.next/
-/out/
-
-# Other
-/coverage
-*.log
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.secret
+firebase-debug.log
+firestore-debug.log

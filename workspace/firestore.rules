@@ -1,0 +1,58 @@
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      // For now, we'll allow access for development.
+      // In a real app with authentication, this would be:
+      // return request.auth != null;
+      return true;
+    }
+    
+    // In a real app with roles, you would implement these functions.
+    // For now, we assume if you are signed in, you are a member with admin rights.
+    function isMember(messId) {
+      return isSignedIn();
+    }
+    function role(messId) {
+      return "admin";
+    }
+
+    // User can read/update their own profile
+    match /users/{uid} {
+      allow read, create: if isSignedIn(); // Simplified for now
+      allow update: if isSignedIn(); // Simplified for now
+      allow delete: if false; // Generally users shouldn't delete their own accounts
+    }
+
+    // All other collections are wide open for now for development purposes.
+    // In production, you would lock these down with role-based access
+    // similar to the commented-out example for 'messes'.
+    match /{collection}/{docId} {
+        allow read, write: if isSignedIn();
+    }
+
+    // Example of a more secure, tenanted model for when auth is fully implemented
+    /*
+    match /messes/{messId} {
+      allow read: if isMember(messId);
+      allow write: if isMember(messId) && role(messId) == "admin";
+
+      match /{collection}/{docId} {
+        allow read: if isMember(messId);
+
+        allow create: if isMember(messId) && (role(messId) in ["editor","admin"])
+          && request.resource.data.messId == messId;
+
+        allow update: if isMember(messId) && (
+          role(messId) == "admin" ||
+          (role(messId) == "editor" && resource.data.creatorUid == request.auth.uid)
+        ) && request.resource.data.messId == messId;
+
+        allow delete: if isMember(messId) && role(messId) == "admin";
+      }
+    }
+    */
+  }
+}
