@@ -129,10 +129,11 @@ export default function RationScalePage() {
   const itemsByCategory = useMemo(() => {
     const grouped: { [key: string]: RationScaleRow[] } = {};
     items.forEach(item => {
-      if (!grouped[item.categoryId]) {
-        grouped[item.categoryId] = [];
+      const categoryId = item.categoryId || 'uncategorized';
+      if (!grouped[categoryId]) {
+        grouped[categoryId] = [];
       }
-      grouped[item.categoryId].push(item);
+      grouped[categoryId].push(item);
     });
     // Sort items within each category
     for (const categoryId in grouped) {
@@ -142,13 +143,13 @@ export default function RationScalePage() {
   }, [items]);
 
   const sortedCategoryIds = useMemo(() => {
-    return categories.map(c => c.id).filter(id => itemsByCategory[id]).sort((a, b) => {
-        const catA = categories.find(c => c.id === a)?.name || '';
-        const catB = categories.find(c => c.id === b)?.name || '';
-        return catA.localeCompare(catB);
+    return Object.keys(itemsByCategory).sort((a,b) => {
+      const catA = categories.find(c => c.id === a)?.name || a;
+      const catB = categories.find(c => c.id === b)?.name || b;
+      return catA.localeCompare(catB);
     });
   }, [categories, itemsByCategory]);
-
+  
   const getCategoryName = (categoryId: string) => {
     return categories.find(c => c.id === categoryId)?.name || 'Uncategorized';
   };
