@@ -30,7 +30,7 @@ import { collection, doc, writeBatch, getDocs } from 'firebase/firestore';
 import type { RationScaleItem, Ingredient, Category, UnitOfMeasure } from '@/lib/types';
 import { firestore } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getCategories, getIngredients, getUoms } from '@/lib/firebase/firestore';
+import { getCategories, getIngredients, getUoms, getRationScale } from '@/lib/firebase/firestore';
 import { Loader2, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -54,21 +54,18 @@ export default function RationScalePage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [rationScaleSnap, ingredientsSnap, categoriesSnap, uomSnap] = await Promise.all([
-          getDocs(collection(firestore, 'rationScaleItems')),
+        const [rationScaleData, ingredientsData, categoriesData, uomData] = await Promise.all([
+          getRationScale(),
           getIngredients(),
           getCategories(),
           getUoms(),
         ]);
 
-        const rationScaleData = rationScaleSnap.docs.map(doc => ({ id: doc.id, ...doc.data(), isModified: false } as RationScaleRow));
-        const ingredientsData = ingredientsSnap;
-        const categoriesData = categoriesSnap;
-        const uomData = uomSnap;
+        const rationScaleRows = rationScaleData.map(doc => ({ ...doc, isModified: false } as RationScaleRow));
         
-        rationScaleData.sort((a,b) => a.name.localeCompare(b.name));
+        rationScaleRows.sort((a,b) => a.name.localeCompare(b.name));
 
-        setItems(rationScaleData);
+        setItems(rationScaleRows);
         setIngredients(ingredientsData);
         setCategories(categoriesData);
         setUnitsOfMeasure(uomData);
@@ -118,8 +115,10 @@ export default function RationScalePage() {
 
     modifiedItems.forEach(item => {
         const { isModified, ...itemData } = item;
+        // The item in rationScaleItems collection does not have 'variants' or 'dishIds'
+        const { variants, dishIds, ...rationScaleItemData } = itemData as any;
         const itemRef = doc(firestore, 'rationScaleItems', item.id);
-        batch.update(itemRef, itemData);
+        batch.update(itemRef, rationScaleItemData);
     });
 
     try {
@@ -142,7 +141,7 @@ export default function RationScalePage() {
       const categoryName = getCategoryName(item.categoryId).toLowerCase();
       
       const nameMatches = name.includes(nameFilter.toLowerCase());
-      const categoryMatches = categoryFilter === '' || categoryName.includes(categoryFilter.toLowerCase());
+      const categoryMatches = categoryFilter === '' || categoryFilter.toLowerCase() === 'all' || item.categoryId === categoryFilter;
       return nameMatches && categoryMatches;
     });
   }, [items, nameFilter, categoryFilter, categories, ingredients]);
@@ -169,12 +168,17 @@ export default function RationScalePage() {
               onChange={(e) => setNameFilter(e.target.value)}
               className="max-w-sm"
             />
-            <Input
-              placeholder="Filter by category..."
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="max-w-sm"
-            />
+            <Select onValueChange={setCategoryFilter} defaultValue="all">
+              <SelectTrigger className="w-[280px]">
+                <SelectValue placeholder="Filter by category..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
       </CardHeader>
       <CardContent>
@@ -228,7 +232,7 @@ export default function RationScalePage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      No ration scale items found.
+                      No ration scale items found. Ensure the database is seeded on the Check Status page.
                     </TableCell>
                   </TableRow>
                 )}
