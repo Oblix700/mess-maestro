@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -46,36 +46,37 @@ export default function RationScalePage() {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [rationScaleData, categoriesData, uomData] = await Promise.all([
-          getRationScale(),
-          getCategories(),
-          getUoms(),
-        ]);
-        const rationScaleRows = rationScaleData.map(doc => ({ 
-            ...doc, 
-            quantity: Number(doc.quantity || 0), // Ensure quantity is a number
-            isModified: false 
-        }));
-        setItems(rationScaleRows);
-        setCategories(categoriesData);
-        setUnitsOfMeasure(uomData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch ration scale data.",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [rationScaleData, categoriesData, uomData] = await Promise.all([
+        getRationScale(),
+        getCategories(),
+        getUoms(),
+      ]);
+      const rationScaleRows = rationScaleData.map(doc => ({ 
+          ...doc, 
+          quantity: Number(doc.quantity || 0), // Ensure quantity is a number
+          isModified: false 
+      }));
+      setItems(rationScaleRows);
+      setCategories(categoriesData);
+      setUnitsOfMeasure(uomData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch ration scale data.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [toast]);
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleFieldChange = (itemId: string, field: 'quantity' | 'unitOfMeasureId', value: string | number) => {
     setItems(prevItems =>
