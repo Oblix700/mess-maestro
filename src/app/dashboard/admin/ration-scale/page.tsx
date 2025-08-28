@@ -138,13 +138,13 @@ export default function RationScalePage() {
   const filteredItems = useMemo(() => {
     return items.filter(item => {
       const name = getIngredientName(item.id).toLowerCase();
-      const categoryName = getCategoryName(item.categoryId).toLowerCase();
+      const categoryId = ingredients.find(i => i.id === item.id)?.categoryId || '';
       
       const nameMatches = name.includes(nameFilter.toLowerCase());
-      const categoryMatches = categoryFilter === '' || categoryFilter.toLowerCase() === 'all' || item.categoryId === categoryFilter;
+      const categoryMatches = categoryFilter === '' || categoryFilter.toLowerCase() === 'all' || categoryId === categoryFilter;
       return nameMatches && categoryMatches;
     });
-  }, [items, nameFilter, categoryFilter, categories, ingredients]);
+  }, [items, nameFilter, categoryFilter, ingredients]);
 
   return (
     <Card>
@@ -202,7 +202,7 @@ export default function RationScalePage() {
                       <TableRow key={item.id} className={cn(item.isModified && "bg-blue-50 dark:bg-blue-900/20")}>
                           <TableCell className="font-medium">{getIngredientName(item.id)}</TableCell>
                           <TableCell>
-                          {getCategoryName(item.categoryId)}
+                          {getCategoryName(ingredients.find(i => i.id === item.id)?.categoryId || '')}
                           </TableCell>
                           <TableCell>
                               <Input 
